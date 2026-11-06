@@ -1,7 +1,7 @@
 # MomCheck: solution pitch
 
 **Voice follow-up for every pregnant woman and new mother, in her own language, with her ASHA worker in the loop.**
-Live app: <https://momcheck.onrender.com> (open a demo ASHA, no sign-up) · Code: <https://github.com/Shubhz20/momcheck>
+Live app: <https://momcheck.onrender.com> (open a demo ASHA, no sign-up) · Code: <https://github.com/Shubhz20/momcheck> · **One-page PDF: [MomCheck-Pitch.pdf](MomCheck-Pitch.pdf)**
 
 ## The problem
 Mothers die in India mostly from delays: in recognising a danger sign, reaching care, and getting care. The person meant to catch the first delay is the ASHA worker. She looks after every pregnant woman and newborn in her village, mostly on foot, often in a language that isn't the mother's own (urban wards have migrant families from all over India). She cannot ask every woman about every danger sign every week.

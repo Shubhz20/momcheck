@@ -2,7 +2,12 @@
 
 **A voice assistant that follows up with pregnant women and new mothers in 10 Indian languages, and alerts the ASHA worker the moment something is wrong.**
 
-**Live:** <https://momcheck.onrender.com> (pick a demo ASHA, no sign-up) · **One-page pitch:** [docs/PITCH.md](docs/PITCH.md) · Built on **Gnani AI** Prisma STT, Timbre TTS and voice cloning
+| | |
+|---|---|
+| 🌐 **Live app** | **<https://momcheck.onrender.com>**: pick a demo ASHA account, no sign-up. If the free server is asleep, the first load can take up to a minute. |
+| 📄 **Solution pitch (1 page)** | **[MomCheck-Pitch.pdf](docs/MomCheck-Pitch.pdf)** · [read it on GitHub](docs/PITCH.md) |
+| 🧠 **Built on Gnani AI** | Prisma STT · Timbre TTS · Voice cloning (app.gnani.ai/voice API platform) |
+| 📊 **Noise evaluation** | [eval/REPORT.md](eval/REPORT.md): 100% of danger signs caught down to 5 dB SNR on an 8 kHz phone line |
 
 An ASHA worker looks after every pregnant woman and newborn in her village. Following up with each of them means walking door to door or making calls from her own phone, often in a language that isn't the mother's. When a danger sign is missed, the referral comes late.
 

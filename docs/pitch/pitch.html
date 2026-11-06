@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MomCheck: Solution Pitch</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  :root {
+    --teal: #0f766e; --teal-dark: #134e4a; --teal-soft: #e6f4f2;
+    --rose: #e11d48; --rose-soft: #fff1f3; --amber: #b45309;
+    --ink: #1f2933; --muted: #52606d; --line: #e4e7eb;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  body {
+    width: 210mm; height: 297mm; overflow: hidden;
+    padding: 11mm 13mm 9mm;
+    font-family: "Inter", "Noto Sans Devanagari", system-ui, sans-serif;
+    font-size: 8.55pt; line-height: 1.42; color: var(--ink);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    display: flex; flex-direction: column;
+  }
+  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm;
+           padding-bottom: 3.2mm; border-bottom: 2px solid var(--teal); }
+  .brand { display: flex; gap: 3.2mm; align-items: center; }
+  .mark { width: 11mm; height: 11mm; border-radius: 3mm; background: var(--teal);
+          display: grid; place-items: center; color: #fff; font-size: 15pt; flex: none; }
+  h1 { font-size: 21pt; font-weight: 800; letter-spacing: -0.02em; color: var(--teal-dark); line-height: 1.05; }
+  .tag { font-size: 9.6pt; color: var(--muted); margin-top: 0.8mm; font-weight: 500; }
+  .links { text-align: right; font-size: 8pt; line-height: 1.6; white-space: nowrap; }
+  .links b { color: var(--teal-dark); }
+  .links a { color: var(--teal); text-decoration: none; font-weight: 600; }
+  h2 { font-size: 8.4pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+       color: var(--teal); margin: 3.6mm 0 1.4mm; }
+  p { margin-bottom: 1.2mm; }
+  .problem { background: var(--rose-soft); border-left: 3px solid var(--rose); padding: 2.2mm 3mm; border-radius: 0 2mm 2mm 0; }
+  ul { list-style: none; }
+  li { position: relative; padding-left: 4mm; margin-bottom: 1.25mm; }
+  li::before { content: ""; position: absolute; left: 0.6mm; top: 1.6mm; width: 1.6mm; height: 1.6mm; border-radius: 50%; background: var(--teal); }
+  b, strong { font-weight: 650; }
+  .cols { display: grid; grid-template-columns: minmax(0,1.17fr) minmax(0,1fr); gap: 5mm; }
+  table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  th, td { text-align: left; padding: 1.2mm 1.6mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-weight: 600; color: var(--muted); font-size: 7.4pt; text-transform: uppercase; letter-spacing: 0.04em; background: #f7f9fa; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .good { color: var(--teal); font-weight: 700; }
+  .warn { color: var(--amber); font-weight: 700; }
+  td:first-child { white-space: nowrap; }
+  code { white-space: nowrap; font-family: ui-monospace, Menlo, monospace; font-size: 7.4pt; background: var(--teal-soft); color: var(--teal-dark); padding: 0 1mm; border-radius: 1mm; }
+  .flow { display: flex; align-items: center; gap: 1.2mm; flex-wrap: wrap; margin: 1.6mm 0 1mm; font-size: 7.8pt; }
+  .flow span { white-space: nowrap; background: var(--teal-soft); color: var(--teal-dark); padding: 0.8mm 2mm; border-radius: 4mm; font-weight: 600; }
+  .flow i { color: var(--muted); font-style: normal; }
+  .deva { font-family: "Noto Sans Devanagari", "Inter", sans-serif; }
+  .note { font-size: 7.6pt; color: var(--muted); }
+  footer { margin-top: auto; padding-top: 2.4mm; border-top: 1px solid var(--line); display: flex; justify-content: space-between;
+           font-size: 7.4pt; color: var(--muted); }
+  footer b { color: var(--teal-dark); }
+</style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="mark">♥</div>
+      <div>
+        <h1>MomCheck</h1>
+        <div class="tag">Voice follow-up for every pregnant woman and new mother, in her own language, with her ASHA worker in the loop.</div>
+      </div>
+    </div>
+    <div class="links">
+      <div><b>Live app</b> &nbsp;<a href="https://momcheck.onrender.com">momcheck.onrender.com</a></div>
+      <div><b>Code</b> &nbsp;<a href="https://github.com/Shubhz20/momcheck">github.com/Shubhz20/momcheck</a></div>
+      <div class="note">Open a demo ASHA account. No sign-up needed.</div>
+    </div>
+  </header>
+
+  <h2>The problem</h2>
+  <div class="problem">
+    Most maternal deaths in India come from <b>delays</b>: in recognising a danger sign, in reaching care, and in getting care. The person meant to catch the first delay is the <b>ASHA worker</b>. She looks after every pregnant woman and newborn in her area, mostly on foot, and often in a language that isn't the mother's own, since urban wards have migrant families from all over India. She cannot ask every woman about every danger sign every week.
+  </div>
+
+  <h2>What MomCheck does</h2>
+  <ul>
+    <li><b>Follow-up conversations in 10 Indian languages</b>, code-mixed speech included. MomCheck goes through the government's danger-sign checklist (MCP card, Home-Based Newborn Care after birth, and a gentle mood check) one question at a time.</li>
+    <li><b>Red / Amber triage with an action card.</b> Every danger sign is graded. For a red sign she is told to go to <i>her</i> named hospital now (108/102 free ambulance). The ASHA is alerted <b>during the conversation</b> with the next steps: call her, the hospital, and her ANM. A live checklist and risk meter fill in as she talks.</li>
+    <li><b>In the ASHA's own voice.</b> The ASHA reads a consent passage once, and <b>Gnani voice cloning</b> then speaks to her women in her voice, in any of the 10 languages. Women answer a voice they trust, and MomCheck always says it is an automated assistant.</li>
+    <li><b>Interpreter for home visits.</b> The ASHA speaks Marathi, and the Tamil mother hears Tamil in the ASHA's voice. Her reply comes back translated, and danger signs still raise alerts.</li>
+    <li><b>Ask MomCheck.</b> Each mother gets a personal link or QR code to ask questions in her language whenever she is worried. It needs no app or login, and her ASHA hears about any danger sign.</li>
+    <li><b>For the ASHA:</b> spoken visit notes become records, she gets a spoken daily briefing, and she has a risk map of her women and a 7-day impact panel.</li>
+  </ul>
+
+  <div class="cols">
+    <div>
+      <h2>Built on Gnani AI</h2>
+      <div class="flow" style="flex-wrap:nowrap"><span>Her voice</span><i>→</i><span>Prisma STT</span><i>→</i><span>Gemini</span><i>→</i><span>Timbre / cloned voice</span></div>
+      <table>
+        <tr><th>Gnani model</th><th>How MomCheck uses it</th></tr>
+        <tr><td><b>Prisma STT</b><br><code>prisma-v3.0</code></td><td>Every turn, voice notes, interpreter, consent check. Her language plus English for code-mixed speech, with key terms (her name, village, PHC).</td></tr>
+        <tr><td><b>Timbre TTS</b><br><code>timbre-v3.0</code></td><td>MomCheck's voice in 10 languages, the daily briefing, and 8 kHz audio for phone lines.</td></tr>
+        <tr><td><b>Voice cloning</b><br><code>vachana-vc-v1</code></td><td>The ASHA's voice from one sample, speaking every language.</td></tr>
+      </table>
+      <p class="note" style="margin-top:1.4mm">Gemini does the reasoning (next question, grading, translation, summaries). The conversation loop is our own.</p>
+    </div>
+    <div>
+      <h2>Evidence: noisy phone lines</h2>
+      <p>30 synthetic replies in 10 languages were spoken by Timbre, squeezed to an 8 kHz µ-law phone line with street noise, and transcribed by Prisma.</p>
+      <table>
+        <tr><th>Condition</th><th style="text-align:right">Char. error</th><th style="text-align:right">Danger sign caught</th></tr>
+        <tr><td>Clean, 16 kHz</td><td class="num">6.8%</td><td class="num good">30/30</td></tr>
+        <tr><td>Phone line, 8 kHz</td><td class="num">7.3%</td><td class="num good">30/30</td></tr>
+        <tr><td>+ street noise, 10 dB</td><td class="num">7.3%</td><td class="num good">30/30</td></tr>
+        <tr><td>+ street noise, 5 dB</td><td class="num">11.4%</td><td class="num good">30/30</td></tr>
+        <tr><td>+ noise as loud as her voice, 0 dB</td><td class="num">28.3%</td><td class="num warn">25/30</td></tr>
+      </table>
+      <p class="note" style="margin-top:1.4mm">Prisma writes Hinglish naturally: <span class="deva">“मुझे थोड़ा bleeding हो रहा है”</span>.</p>
+    </div>
+  </div>
+
+  <div class="cols">
+    <div>
+      <h2>Safety and responsibility</h2>
+      <p>MomCheck screens and escalates. It never diagnoses or prescribes, and every danger sign reaches a human health worker. The protocol follows MCP and HBNC guidance. Voice cloning needs the ASHA's read-aloud consent, which Prisma verifies, and she can delete her voice at any time. On a shared phone MomCheck reveals nothing about her health. All demo data is synthetic.</p>
+    </div>
+    <div>
+      <h2>Status and next steps</h2>
+      <p><b>Live today</b> on free infrastructure, with two demo ASHA accounts (rural Hindi, and an urban ward speaking nine languages). Real phone calls (Twilio Media Streams, 8 kHz µ-law) are built and tested against a simulated stream. <b>Next:</b> Gnani streaming APIs to cut the roughly 4 s reply time, a pilot with real ASHAs, and an ANM supervisor view.</p>
+    </div>
+  </div>
+
+  <footer>
+    <span><b>MomCheck</b> · Great Indian AI Internship Challenge 2026 · #GnaniAI</span>
+    <span>Prisma STT · Timbre TTS · Voice cloning · Hindi, English, Bengali, Gujarati, Kannada, Malayalam, Marathi, Punjabi, Tamil, Telugu</span>
+  </footer>
+</body>
+</html>
