@@ -1,9 +1,13 @@
-import { useState, type ReactNode } from "react";
+import { Suspense, lazy, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, BellRing, CalendarClock, Database, Languages, PhoneCall, Users } from "lucide-react";
 import { api } from "../api/client";
 import type { Alert, Beneficiary, Dashboard as DashboardData } from "../api/types";
 import { AlertCard } from "../components/AlertCard";
+import { ImpactPanel } from "../components/ImpactPanel";
+
+// Leaflet is only needed for the map, so it loads separately
+const AreaMap = lazy(() => import("../components/AreaMap").then((m) => ({ default: m.AreaMap })));
 import { CallRow } from "../components/CallCard";
 import { RiskBadge } from "../components/badges";
 import { useToast } from "../components/Toast";
@@ -185,7 +189,14 @@ export function DashboardPage() {
       )}
 
       <div className="mt-8 grid gap-6 lg:grid-cols-5">
-        <section className="lg:col-span-3">
+        {data.map.women.length > 0 && (
+          <div className="lg:col-span-3">
+            <Suspense fallback={<Skeleton className="h-80 w-full" />}>
+              <AreaMap data={data.map} />
+            </Suspense>
+          </div>
+        )}
+        <section className={data.map.women.length > 0 ? "lg:col-span-2" : "lg:col-span-5"}>
           <SectionHeader
             title="Visits due this week"
             subtitle="Includes overdue visits"
@@ -209,22 +220,24 @@ export function DashboardPage() {
             )}
           </Card>
         </section>
-
-        <section className="lg:col-span-2">
-          <SectionHeader title="Recent calls" />
-          <Card className="p-1.5">
-            {data.recent_calls.length ? (
-              <div className="divide-y divide-line/70">
-                {data.recent_calls.map((c) => (
-                  <CallRow key={c.id} call={c} />
-                ))}
-              </div>
-            ) : (
-              <div className="px-4 py-6 text-sm text-muted">No calls yet. Open a woman's profile to start a voice follow-up.</div>
-            )}
-          </Card>
-        </section>
       </div>
+
+      <ImpactPanel impact={data.impact} />
+
+      <section className="mt-8">
+        <SectionHeader title="Recent conversations" />
+        <Card className="p-1.5">
+          {data.recent_calls.length ? (
+            <div className="divide-y divide-line/70">
+              {data.recent_calls.map((c) => (
+                <CallRow key={c.id} call={c} />
+              ))}
+            </div>
+          ) : (
+            <div className="px-4 py-6 text-sm text-muted">No calls yet. Open a woman's profile to start a voice follow-up.</div>
+          )}
+        </Card>
+      </section>
 
       <section className="mt-8">
         <SectionHeader

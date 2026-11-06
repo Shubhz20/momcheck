@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import type { Call } from "../api/types";
 import { isLive } from "../components/CallCard";
 import { ChannelBadge, DangerChips, OutcomeBadge } from "../components/badges";
+import { SafetyPanel } from "../components/SafetyPanel";
 import { Transcript } from "../components/Transcript";
 import { Avatar, Button, Card, ErrorBox, Skeleton, cx } from "../components/ui";
 import { formatDuration, languageName, parseTimestamp } from "../lib/format";
@@ -136,6 +137,8 @@ export function PhoneCallPage() {
           <Transcript turns={call.transcript} />
         </div>
       </Card>
+
+      {call.checklist.length > 0 && <SafetyPanel checklist={call.checklist} triage={call.triage} className="mt-5" />}
 
       {!live && (
         <div className="mt-5">

@@ -14,6 +14,7 @@ from typing import Iterable
 from sqlmodel import Session, func, select
 
 from .models import Alert, Asha, Beneficiary, Briefing, Call, Note
+from .demo_history import add_history
 from .services.serialize import today
 
 log = logging.getLogger("seed")
@@ -40,6 +41,23 @@ SAVITA_WOMEN: list[Woman] = [
     ("Pooja Sharma", "en-IN", "Magarpatta, Hadapsar", "pregnant", 26, 7, "Glucose test"),
 ]
 
+# Synthetic home positions near each village or locality, for the ASHA's map
+COORDS: dict[str, tuple[float, float]] = {
+    "Sunita Devi": (26.9884, 81.0961),
+    "Rekha Yadav": (26.9902, 81.1003),
+    "Kiran Verma": (26.9547, 81.0629),
+    "Shabnam Bano": (26.9571, 81.0588),
+    "Anjali Patil": (18.4968, 73.9362),
+    "Lakshmi Murugan": (18.4986, 73.9151),
+    "Rina Das": (18.5041, 73.9328),
+    "Kavya Gowda": (18.4929, 73.9391),
+    "Sravani Reddy": (18.4979, 73.9166),
+    "Fathima Beevi": (18.4993, 73.9447),
+    "Gurpreet Kaur": (18.5148, 73.9268),
+    "Hetal Parmar": (18.4957, 73.9378),
+    "Pooja Sharma": (18.5162, 73.9289),
+}
+
 DEMO_ASHAS: list[dict] = [
     {
         "name": "Meena Kumari",
@@ -48,6 +66,11 @@ DEMO_ASHAS: list[dict] = [
         "language": "hi-IN",
         "women": MEENA_WOMEN,
         "phone_base": 1,
+        "facilities": {
+            "phc": {"name": "PHC Rampur", "phone": "9000000301", "lat": 26.9851, "lng": 81.1052},
+            "hospital": {"name": "District Women Hospital, Barabanki", "phone": "9000000302", "lat": 26.9258, "lng": 81.1869},
+            "anm": {"name": "Sushila Verma (ANM)", "phone": "9000000303"},
+        },
     },
     {
         "name": "Savita Jadhav",
@@ -56,6 +79,11 @@ DEMO_ASHAS: list[dict] = [
         "language": "mr-IN",
         "women": SAVITA_WOMEN,
         "phone_base": 11,
+        "facilities": {
+            "phc": {"name": "UPHC Hadapsar", "phone": "9000000311", "lat": 18.5019, "lng": 73.9259},
+            "hospital": {"name": "Sassoon General Hospital", "phone": "9000000312", "lat": 18.5268, "lng": 73.8741},
+            "anm": {"name": "Rekha Pawar (ANM)", "phone": "9000000313"},
+        },
     },
 ]
 
@@ -73,6 +101,8 @@ def _add_women(session: Session, asha: Asha, women: Iterable[Woman], phone_base:
             category=category,
             next_visit_date=t + timedelta(days=visit_in),
             next_visit_type=visit_type,
+            lat=COORDS.get(name, (None, None))[0],
+            lng=COORDS.get(name, (None, None))[1],
         )
         if category == "pregnant":
             b.edd = t + timedelta(weeks=40 - age)
@@ -102,18 +132,31 @@ def _spec_for(asha: Asha) -> dict | None:
     return next((s for s in DEMO_ASHAS if s["phone"] == asha.phone), None) if asha.is_demo else None
 
 
+def _setup_demo(session: Session, asha: Asha, spec: dict) -> int:
+    asha.facilities = spec["facilities"]
+    session.add(asha)
+    session.commit()
+    count = _add_women(session, asha, spec["women"], spec["phone_base"])
+    add_history(session, asha)
+    return count
+
+
 def ensure_demo_accounts(session: Session) -> None:
     """Create the demo ASHAs (with their women) if they don't exist yet."""
-    existing = {a.phone for a in session.exec(select(Asha).where(Asha.is_demo == True)).all()}  # noqa: E712
+    existing = {a.phone: a for a in session.exec(select(Asha).where(Asha.is_demo == True)).all()}  # noqa: E712
     created = False
     for spec in DEMO_ASHAS:
-        if spec["phone"] in existing:
+        asha = existing.get(spec["phone"])
+        if asha is not None:
+            if not asha.facilities:  # created before facilities, map and history existed: rebuild once
+                reset_demo(session, asha)
+                log.info("Upgraded demo ASHA %s", asha.name)
             continue
         asha = Asha(name=spec["name"], phone=spec["phone"], area=spec["area"], language=spec["language"], is_demo=True)
         session.add(asha)
         session.commit()
         session.refresh(asha)
-        _add_women(session, asha, spec["women"], spec["phone_base"])
+        _setup_demo(session, asha, spec)
         log.info("Created demo ASHA %s", asha.name)
         created = True
     if created:
@@ -127,7 +170,7 @@ def ensure_demo_accounts(session: Session) -> None:
 
 
 def reset_demo(session: Session, asha: Asha) -> int:
-    """Put a demo account back to its starting state (removes calls, alerts and notes made on it)."""
+    """Put a demo account back to its starting state (removes calls, alerts, notes and a recorded voice)."""
     spec = _spec_for(asha)
     if spec is None:
         raise ValueError("Only demo accounts can be reset")
@@ -135,8 +178,10 @@ def reset_demo(session: Session, asha: Asha) -> int:
     for model in (Note, Briefing):
         for row in session.exec(select(model).where(model.asha_id == asha.id)).all():
             session.delete(row)
+    asha.voice_embedding, asha.voice_consent_at, asha.use_own_voice = None, None, True
+    session.add(asha)
     session.commit()
-    return _add_women(session, asha, spec["women"], spec["phone_base"])
+    return _setup_demo(session, asha, spec)
 
 
 def seed_sample(session: Session, asha: Asha) -> int:
@@ -145,5 +190,5 @@ def seed_sample(session: Session, asha: Asha) -> int:
         return 0
     spec = _spec_for(asha)
     if spec:
-        return _add_women(session, asha, spec["women"], spec["phone_base"])
+        return _setup_demo(session, asha, spec)
     return _add_women(session, asha, SAVITA_WOMEN, 11)

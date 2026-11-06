@@ -91,3 +91,20 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .eq-bar, .dot-blink, .speak-ring, .ring-pulse, .rec-pulse, .slide-down { animation: none; }
 }
+
+/* A checklist row that just changed */
+@keyframes row-pop {
+  0% { transform: scale(0.97); background-color: rgb(255 255 255 / 0.18); }
+  100% { transform: scale(1); }
+}
+.row-pop { animation: row-pop 0.6s ease-out; }
+
+/* Full-width red banner on a new RED alert */
+@keyframes alarm {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(220 38 38 / 0.55); }
+  50% { box-shadow: 0 0 0 10px rgb(220 38 38 / 0); }
+}
+.alarm { animation: alarm 1.4s ease-out infinite; }
+
+/* Leaflet map: keep it under the app's sticky header and modals */
+.leaflet-container { font: inherit; z-index: 0; }

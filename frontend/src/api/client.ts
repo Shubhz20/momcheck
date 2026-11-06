@@ -1,5 +1,6 @@
 import type {
   Alert,
+  AskInfo,
   Beneficiary,
   BeneficiaryDetail,
   BeneficiaryInput,
@@ -7,6 +8,8 @@ import type {
   Call,
   Dashboard,
   DemoAccount,
+  Facilities,
+  InterpretTurn,
   Language,
   LanguageCode,
   Me,
@@ -103,6 +106,15 @@ export const api = {
   },
   endCall: (id: number) => request<Call>("POST", `/calls/${id}/end`),
   startPhoneCall: (beneficiaryId: number) => request<Call>("POST", `/beneficiaries/${beneficiaryId}/phone-call`),
+  startInterpreter: (beneficiaryId: number) => request<Call>("POST", `/beneficiaries/${beneficiaryId}/interpreter`),
+  interpret: (callId: number, audio: Blob, speaker: "asha" | "mother") => {
+    const fd = new FormData();
+    fd.append("audio", audio, "turn.wav");
+    fd.append("speaker", speaker);
+    return request<InterpretTurn>("POST", `/calls/${callId}/interpret`, fd);
+  },
+  askLink: (beneficiaryId: number, rotate = false) =>
+    request<{ token: string; path: string }>("POST", `/beneficiaries/${beneficiaryId}/ask-link${qs({ rotate: rotate ? "true" : undefined })}`),
   hangupCall: (id: number) => request<Call>("POST", `/calls/${id}/hangup`),
 
   alerts: (status?: "open" | "acknowledged") => request<Alert[]>("GET", `/alerts${qs({ status })}`),
@@ -125,4 +137,29 @@ export const api = {
   savedBriefingAudioUrl: (id: number) => `/api/briefings/${id}/audio`,
 
   seedDemo: () => request<{ created: number }>("POST", "/demo/seed"),
+
+  voiceScript: () => request<{ text: string; language: LanguageCode }>("GET", "/me/voice/script"),
+  setVoice: (audio: Blob) => {
+    const fd = new FormData();
+    fd.append("audio", audio, "voice.wav");
+    fd.append("consent", "true");
+    return request<Me>("POST", "/me/voice", fd);
+  },
+  deleteVoice: () => request<Me>("DELETE", "/me/voice"),
+  previewVoice: (language: LanguageCode) => request<{ text: string; audio: string }>("POST", `/me/voice/preview${qs({ language })}`),
+  updateSettings: (s: { use_own_voice?: boolean; facilities?: Facilities }) => request<Me>("PATCH", "/me", s),
+
+  // Public: the mother's own page (no sign-in; the token in her link is the key)
+  askInfo: (token: string) => request<AskInfo>("GET", `/ask/${token}`),
+  askStart: (token: string) => request<{ call_id: number; reply_text: string; reply_audio: string }>("POST", `/ask/${token}/start`),
+  askTurn: (token: string, callId: number, audio: Blob) => {
+    const fd = new FormData();
+    fd.append("audio", audio, "turn.wav");
+    return request<{ user_text: string | null; reply_text: string; reply_audio: string; end_call: boolean; alert_raised: boolean; asha_told: boolean }>(
+      "POST",
+      `/ask/${token}/calls/${callId}/turn`,
+      fd,
+    );
+  },
+  askEnd: (token: string, callId: number) => request<{ status: string; asha_told: boolean }>("POST", `/ask/${token}/calls/${callId}/end`),
 };

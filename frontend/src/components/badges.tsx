@@ -1,8 +1,20 @@
-import { AlertTriangle, BellRing, CheckCircle2, Phone, PhoneMissed, PhoneOutgoing, Radio, RotateCcw, XCircle } from "lucide-react";
+import { AlertTriangle, AudioLines, BellRing, CheckCircle2, Languages, MessageCircleHeart, Phone, PhoneMissed, PhoneOutgoing, Radio, RotateCcw, XCircle } from "lucide-react";
 import type { Call, CallOutcome, Risk } from "../api/types";
-import { Badge } from "./ui";
+import { Badge, cx } from "./ui";
 
-export function OutcomeBadge({ call }: { call: Pick<Call, "status" | "outcome"> }) {
+export function OutcomeBadge({ call }: { call: Pick<Call, "status" | "outcome"> & { triage?: Call["triage"] } }) {
+  if (call.outcome === "DANGER_SIGN" && call.triage === "amber")
+    return (
+      <Badge tone="amber" icon={<AlertTriangle className="size-3" />}>
+        Amber · danger sign
+      </Badge>
+    );
+  if (call.outcome === "DANGER_SIGN" && call.triage === "red")
+    return (
+      <Badge tone="red" icon={<AlertTriangle className="size-3" />}>
+        Red · danger sign
+      </Badge>
+    );
   if (call.status === "ringing")
     return (
       <Badge tone="blue" icon={<BellRing className="size-3" />}>
@@ -38,6 +50,18 @@ export function OutcomeBadge({ call }: { call: Pick<Call, "status" | "outcome"> 
 
 /** How the call happened: her real phone (Twilio), or a browser call with the simulated 8 kHz phone line. */
 export function ChannelBadge({ call }: { call: Pick<Call, "channel" | "phone_line"> }) {
+  if (call.channel === "ask")
+    return (
+      <Badge tone="rose" icon={<MessageCircleHeart className="size-3" />}>
+        She asked MomCheck
+      </Badge>
+    );
+  if (call.channel === "interpreter")
+    return (
+      <Badge tone="blue" icon={<Languages className="size-3" />}>
+        Interpreter
+      </Badge>
+    );
   if (call.channel === "phone")
     return (
       <Badge tone="brand" icon={<Phone className="size-3" />}>
@@ -104,5 +128,19 @@ export function DangerChips({ signs }: { signs: string[] }) {
         </span>
       ))}
     </div>
+  );
+}
+
+/** MomCheck spoke in the ASHA's own (cloned) voice. */
+export function OwnVoiceBadge({ name, dark = false }: { name: string; dark?: boolean }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium",
+        dark ? "bg-white/15 text-white" : "bg-blush-50 text-blush-600 ring-1 ring-inset ring-blush-200",
+      )}
+    >
+      <AudioLines className="size-3" /> In {name.split(" ")[0]}'s voice
+    </span>
   );
 }

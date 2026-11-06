@@ -127,7 +127,7 @@ interface Dashboard {
 | POST | `/api/auth/logout` | | `{ ok: true }` |
 | GET | `/api/auth/me` | | `Me` |
 | POST | `/api/auth/reset-demo` | | `{ created: number }`: demo accounts only; restores the starting data |
-| GET | `/api/dashboard` | | `Dashboard` |
+| GET | `/api/dashboard` | | `Dashboard` (includes `impact`: the last 7 days, and `map`: her women with risk, and her facilities) |
 | GET | `/api/languages` | | `Language[]` |
 | GET | `/api/beneficiaries` | `?q=&language=&category=` | `Beneficiary[]` |
 | POST | `/api/beneficiaries` | name, phone, language, village, category, edd?, delivery_date?, next_visit_date?, next_visit_type?, notes? | `Beneficiary` |
@@ -152,6 +152,18 @@ interface Dashboard {
 | GET | `/api/briefing/audio` | `?language=hi-IN` | `audio/wav` |
 | GET | `/api/briefings` | `?limit=30` | `{ id, day, language, text, updated_at }[]`: her saved briefings, newest day first |
 | GET | `/api/briefings/{id}/audio` | | `audio/wav`: a saved briefing, spoken again |
+| GET | `/api/me/voice/script` | | `{ text, language }`: the consent passage she reads aloud |
+| POST | `/api/me/voice` | multipart: `audio` (WAV 5–30 s), `consent` = `true` | `Me`. Prisma checks the recording matches the passage, then Gnani voice cloning makes her voice |
+| POST | `/api/me/voice/preview` | `?language=ta-IN` | `{ text, audio }`: a sample greeting in her voice (MP3 data URL) |
+| DELETE | `/api/me/voice` | | `Me` |
+| PATCH | `/api/me` | `{ use_own_voice?, facilities? }` | `Me`. Facilities: `{ phc?, hospital?, anm? }`, each `{ name, phone }` |
+| POST | `/api/beneficiaries/{id}/interpreter` | | `Call` (channel `interpreter`) |
+| POST | `/api/calls/{id}/interpret` | multipart: `audio`, `speaker` = `asha` or `mother` | `InterpretTurn`: what was said, the translation, English, audio for the other side, live checklist |
+| POST | `/api/beneficiaries/{id}/ask-link` | `?rotate=true` makes a new one | `{ token, path }`: her personal Ask MomCheck link |
+| GET | `/api/ask/{token}` | public | `{ first_name, language, category, asha_name, asha_voice }` |
+| POST | `/api/ask/{token}/start` | public | `{ call_id, reply_text, reply_audio }` (15 conversations per day per link) |
+| POST | `/api/ask/{token}/calls/{id}/turn` | public, multipart `audio` | `{ user_text, reply_text, reply_audio, end_call, alert_raised, asha_told }` |
+| POST | `/api/ask/{token}/calls/{id}/end` | public | `{ status, asha_told }` |
 | POST | `/api/demo/seed` | | `{ created: number }`: adds sample women to the signed-in account if it has none |
 | POST | `/api/twilio/status/{call_id}?token=` | Twilio status callback (form) | `204`. Marks unanswered / busy / failed calls |
 | WS | `/api/twilio/stream` | Twilio Media Stream (bidirectional, 8 kHz mu-law) | The live phone conversation; the `start` message must carry the call's `call_id` and `token` |

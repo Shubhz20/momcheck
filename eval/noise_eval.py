@@ -241,7 +241,7 @@ def write_report(rows: list[dict], conditions: list[str], langs: list[str]) -> N
     for lang in langs:
         cells = [f"{avg([r['cer'] for r in rows if r['lang'] == lang and r['condition'] == c]):.1%}" for c in conditions]
         lines.append(f"| {language_name(lang)} | " + " | ".join(cells) + " |")
-    lines += ["", "CER = character edit distance / reference length, after removing punctuation. Text-to-speech audio is cleaner than real speech, so real calls will score worse; the trend across noise levels is what this measures.", ""]
+    lines += ["", "CER = character edit distance / reference length, after removing punctuation. Text-to-speech audio is cleaner than real speech, so real calls will score worse; the trend across noise levels is what this measures.", "", '**The English row is code-mixed Hinglish.** Prisma writes the Hindi words in Devanagari and the English words in Latin ("मुझे थोड़ा bleeding हो रहा है since last night"), which is how code-mixed speech is naturally written. Against our romanised reference that counts as character errors, but the words are right, and the danger sign in those sentences was still detected.', ""]
     (ROOT / "eval" / "REPORT.md").write_text("\n".join(lines))
 
 

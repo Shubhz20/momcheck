@@ -1,24 +1,27 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, Hand, LayoutDashboard, Mic, MicOff, PhoneCall, PhoneOff, Radio, Square, Volume2 } from "lucide-react";
+import { AlertOctagon, AlertTriangle, ArrowLeft, Hand, LayoutDashboard, Mic, MicOff, PhoneCall, PhoneOff, Radio, Square, Volume2 } from "lucide-react";
 import { api } from "../api/client";
-import type { Call, StartCallResponse, TurnReply, TurnTimings } from "../api/types";
+import type { Call, LiveState, StartCallResponse, TurnReply, TurnTimings } from "../api/types";
 import { NOISE_LEVELS, toPhoneLineWav, type NoiseLevel } from "../audio/phoneLine";
 import { AutoplayBlockedError, playClip, stopClip, unlockAudio } from "../audio/player";
 import { MicCapture, MicError } from "../audio/recorder";
 import { UtteranceDetector } from "../audio/vad";
 import { toCleanWav16k } from "../audio/wav";
-import { ChannelBadge, DangerChips, OutcomeBadge } from "../components/badges";
+import { ChannelBadge, DangerChips, OutcomeBadge, OwnVoiceBadge } from "../components/badges";
+import { SafetyPanel } from "../components/SafetyPanel";
 import { Spinner, cx } from "../components/ui";
 import { formatDuration, languageLabel, parseTimestamp } from "../lib/format";
 import { loadPref, savePref } from "../lib/prefs";
 import { useLanguages } from "../hooks/useLanguages";
+import { useMe } from "../hooks/useAuth";
 
 type Phase = "loading" | "resume" | "speaking" | "listening" | "hearing" | "thinking" | "ending" | "ended" | "fatal";
 
 interface LiveTurn {
   role: "assistant" | "user";
   content: string;
+  en?: string | null; // English subtitle
   timings?: TurnTimings;
   phoneLine?: boolean;
 }
@@ -49,7 +52,9 @@ function clock(sec: number): string {
 }
 
 function initialTurns(call: Call, greeting?: TurnReply): LiveTurn[] {
-  const turns: LiveTurn[] = (call.transcript ?? []).map((t) => ({ role: t.role, content: t.content, phoneLine: t.role === "user" && call.phone_line }));
+  const turns: LiveTurn[] = (call.transcript ?? [])
+    .filter((t) => t.role !== "asha")
+    .map((t) => ({ role: t.role as LiveTurn["role"], content: t.content, en: t.en, phoneLine: t.role === "user" && call.phone_line }));
   if (greeting) {
     const last = [...turns].reverse().find((t) => t.role === "assistant");
     if (last && last.content.trim() === greeting.reply_text.trim()) last.timings = greeting.timings;
@@ -64,6 +69,8 @@ export function CallScreen() {
   const location = useLocation();
   const navigate = useNavigate();
   const { languages } = useLanguages();
+  const me = useMe();
+  const [live, setLive] = useState<LiveState | null>(null);
 
   const [call, setCall] = useState<Call | null>(null);
   const [turns, setTurns] = useState<LiveTurn[]>([]);
@@ -144,6 +151,7 @@ export function CallScreen() {
       const c = await api.endCall(callId);
       setResult(c);
       setCall(c);
+      setLive({ checklist: c.checklist, triage: c.triage, danger_signs: c.danger_signs });
     } catch (e) {
       setEndError((e as Error).message);
     } finally {
@@ -254,9 +262,10 @@ export function CallScreen() {
         if (endedRef.current) return;
         setTurns((t) => [
           ...t,
-          ...(reply.user_text ? [{ role: "user" as const, content: reply.user_text, phoneLine: pl }] : []),
-          { role: "assistant" as const, content: reply.reply_text, timings: reply.timings },
+          ...(reply.user_text ? [{ role: "user" as const, content: reply.user_text, en: reply.user_en, phoneLine: pl }] : []),
+          { role: "assistant" as const, content: reply.reply_text, en: reply.reply_en, timings: reply.timings },
         ]);
+        setLive({ checklist: reply.checklist, triage: reply.triage, danger_signs: reply.danger_signs });
         if (reply.alert_raised) setAlertRaised(true);
         await speak(reply);
       } catch (e) {
@@ -279,6 +288,7 @@ export function CallScreen() {
       navigate(location.pathname, { replace: true, state: null });
       setCall(start.call);
       setTurns(initialTurns(start.call, start.reply));
+      setLive({ checklist: start.reply.checklist, triage: start.reply.triage, danger_signs: start.reply.danger_signs });
       if (start.call.status !== "in_progress") {
         endedRef.current = true;
         setResult(start.call);
@@ -295,6 +305,7 @@ export function CallScreen() {
       .then((c) => {
         setCall(c);
         setTurns(initialTurns(c));
+        setLive({ checklist: c.checklist, triage: c.triage, danger_signs: c.danger_signs });
         if (c.status === "in_progress") setPhase("resume");
         else {
           endedRef.current = true;
@@ -356,7 +367,7 @@ export function CallScreen() {
   const startedAt = call ? parseTimestamp(call.triggered_at).getTime() : now;
   const elapsedSec =
     phase === "ended" && result?.duration_sec != null ? result.duration_sec : Math.max(0, (now - startedAt) / 1000);
-  const live = phase === "speaking" || phase === "listening" || phase === "hearing" || phase === "thinking";
+  const live_ = phase === "speaking" || phase === "listening" || phase === "hearing" || phase === "thinking";
 
   const status: Record<Phase, ReactNode> = {
     loading: "Connecting…",
@@ -390,6 +401,9 @@ export function CallScreen() {
       </Shell>
     );
 
+  const subtitles = call?.language !== "en-IN";
+  const triage = live?.triage ?? null;
+
   return (
     <Shell>
       {/* Top bar */}
@@ -404,97 +418,117 @@ export function CallScreen() {
         <span className="w-16" />
       </div>
 
-      {/* Caller header */}
-      <div className="flex flex-col items-center px-4 pt-6 text-center">
-        <Orb phase={phase} level={level} muted={muted} name={name} />
-        <h1 className="mt-5 text-2xl font-semibold tracking-tight">{name}</h1>
-        <p className="mt-1 text-sm text-brand-100/80">
-          {call ? languageLabel(call.language, languages) : ""} · <span className="font-mono">{clock(elapsedSec)}</span>
-        </p>
-        <div className="mt-3 flex h-6 items-center gap-2 text-sm font-medium text-white">
-          {phase === "speaking" && !blockedAudio && <EqBars />}
-          {phase === "thinking" && <Dots />}
-          {(phase === "loading" || phase === "ending") && <Spinner className="size-4 text-brand-100" />}
-          <span>{status[phase]}</span>
-        </div>
-      </div>
-
-      {/* Live danger banner */}
-      {alertRaised && (
-        <div className="slide-down mx-4 mt-4 flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold shadow-lg shadow-red-900/30">
-          <AlertTriangle className="size-5 shrink-0" />
-          Danger sign detected: ASHA alerted
-        </div>
-      )}
-      {notice && <div className="mx-4 mt-3 rounded-xl bg-amber-400/15 px-4 py-2.5 text-sm text-amber-100">{notice}</div>}
-
-      {/* Transcript */}
-      <div ref={scrollRef} className="mx-4 mt-4 min-h-40 flex-1 space-y-3 overflow-y-auto rounded-2xl bg-black/15 p-4 ring-1 ring-white/10">
-        {turns.length === 0 && phase === "loading" && <p className="text-center text-sm text-brand-100/60">Connecting the call…</p>}
-        {turns.map((t, i) => (
-          <div key={i} className={cx("flex", t.role === "assistant" ? "justify-start" : "justify-end")}>
-            <div className={cx("max-w-[85%]", t.role === "user" && "text-right")}>
-              <div className={cx("mb-0.5 text-[10.5px] font-semibold uppercase tracking-wide", t.role === "assistant" ? "text-brand-200" : "text-blush-200")}>
-                {t.role === "assistant" ? "MomCheck" : name}
-                {t.phoneLine && <span className="ml-1.5 font-normal normal-case text-white/50">📞 8 kHz</span>}
+      <div className="flex flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-2">
+        <div className="flex min-w-0 flex-col">
+          {/* Caller header */}
+          <div className="flex flex-col items-center px-4 pt-6 text-center">
+            <Orb phase={phase} level={level} muted={muted} name={name} />
+            <h1 className="mt-5 text-2xl font-semibold tracking-tight">{name}</h1>
+            <p className="mt-1 text-sm text-brand-100/80">
+              {call ? languageLabel(call.language, languages) : ""} · <span className="font-mono">{clock(elapsedSec)}</span>
+            </p>
+            {call?.own_voice && (
+              <div className="mt-2">
+                <OwnVoiceBadge name={me.name} dark />
               </div>
-              <div
-                className={cx(
-                  "inline-block rounded-2xl px-3.5 py-2 text-left text-[15px] leading-relaxed",
-                  t.role === "assistant" ? "rounded-tl-sm bg-white/12 text-white" : "rounded-tr-sm bg-blush-200 text-ink",
-                )}
-              >
-                {t.content}
-              </div>
-              {t.timings && <TimingChips t={t.timings} />}
+            )}
+            <div className="mt-3 flex h-6 items-center gap-2 text-sm font-medium text-white">
+              {phase === "speaking" && !blockedAudio && <EqBars />}
+              {phase === "thinking" && <Dots />}
+              {(phase === "loading" || phase === "ending") && <Spinner className="size-4 text-brand-100" />}
+              <span>{status[phase]}</span>
             </div>
           </div>
-        ))}
-        {phase === "thinking" && (
-          <div className="flex justify-end">
-            <span className="rounded-2xl rounded-tr-sm bg-blush-200/30 px-3.5 py-2 text-sm text-white/80">
-              <Dots />
-            </span>
+
+          {/* Live danger banner */}
+          {(alertRaised || triage === "red" || triage === "amber") && triage !== "green" && (
+            <div
+              className={cx(
+                "slide-down mx-4 mt-4 flex items-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg",
+                triage === "amber" ? "bg-amber-500 text-amber-950 shadow-amber-900/30" : "alarm bg-red-600 shadow-red-900/30",
+              )}
+            >
+              {triage === "amber" ? <AlertTriangle className="size-5 shrink-0" /> : <AlertOctagon className="size-5 shrink-0" />}
+              {triage === "amber"
+                ? `AMBER: needs a health worker within a day. ${me.name.split(" ")[0]} has been alerted.`
+                : `RED: danger sign. She's been told to go to hospital now. ${me.name.split(" ")[0]} has been alerted.`}
+            </div>
+          )}
+          {notice && <div className="mx-4 mt-3 rounded-xl bg-amber-400/15 px-4 py-2.5 text-sm text-amber-100">{notice}</div>}
+
+          {/* Transcript */}
+          <div ref={scrollRef} className="mx-4 mt-4 min-h-40 flex-1 space-y-3 overflow-y-auto rounded-2xl bg-black/15 p-4 ring-1 ring-white/10 lg:max-h-[52vh]">
+            {turns.length === 0 && phase === "loading" && <p className="text-center text-sm text-brand-100/60">Connecting the call…</p>}
+            {turns.map((t, i) => (
+              <div key={i} className={cx("flex", t.role === "assistant" ? "justify-start" : "justify-end")}>
+                <div className={cx("max-w-[85%]", t.role === "user" && "text-right")}>
+                  <div className={cx("mb-0.5 text-[10.5px] font-semibold uppercase tracking-wide", t.role === "assistant" ? "text-brand-200" : "text-blush-200")}>
+                    {t.role === "assistant" ? "MomCheck" : name}
+                    {t.phoneLine && <span className="ml-1.5 font-normal normal-case text-white/50">📞 8 kHz</span>}
+                  </div>
+                  <div
+                    className={cx(
+                      "inline-block rounded-2xl px-3.5 py-2 text-left text-[15px] leading-relaxed",
+                      t.role === "assistant" ? "rounded-tl-sm bg-white/12 text-white" : "rounded-tr-sm bg-blush-200 text-ink",
+                    )}
+                  >
+                    {t.content}
+                    {subtitles && t.en && <span className={cx("mt-1 block text-[12.5px] italic", t.role === "assistant" ? "text-brand-100/70" : "text-ink/60")}>{t.en}</span>}
+                  </div>
+                  {t.timings && <TimingChips t={t.timings} />}
+                </div>
+              </div>
+            ))}
+            {phase === "thinking" && (
+              <div className="flex justify-end">
+                <span className="rounded-2xl rounded-tr-sm bg-blush-200/30 px-3.5 py-2 text-sm text-white/80">
+                  <Dots />
+                </span>
+              </div>
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Result after the call */}
-      {phase === "ended" && <ResultCard call={result} error={endError} onRetry={retryEnd} />}
+          {/* Result after the call */}
+          {phase === "ended" && <ResultCard call={result} error={endError} onRetry={retryEnd} />}
 
-      {/* Controls */}
-      {phase !== "ended" && (
-        <div className="px-4 pb-4 pt-4">
-          {phase === "resume" ? (
-            <button
-              onClick={resume}
-              className="mx-auto flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-emerald-500 text-base font-semibold text-white shadow-lg hover:bg-emerald-600"
-            >
-              <PhoneCall className="size-5" /> Continue call
-            </button>
-          ) : blockedAudio ? (
-            <button
-              onClick={() => void playBlocked()}
-              className="mx-auto flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-white text-base font-semibold text-brand-900 shadow-lg"
-            >
-              <Volume2 className="size-5" /> Tap to hear MomCheck
-            </button>
-          ) : (
-            <div className="flex items-end justify-center gap-6">
-              <RoundButton label={muted ? "Unmute" : "Mute"} onClick={toggleMute} disabled={!live} active={muted}>
-                {muted ? <MicOff className="size-6" /> : <Mic className="size-6" />}
-              </RoundButton>
-              <TalkButton phase={phase} manual={manual} onClick={onTalkButton} muted={muted} />
-              <RoundButton label="End" onClick={() => void hangUp()} disabled={phase === "ending" || phase === "loading"} danger>
-                <PhoneOff className="size-6" />
-              </RoundButton>
+          {/* Controls */}
+          {phase !== "ended" && (
+            <div className="px-4 pb-4 pt-4">
+              {phase === "resume" ? (
+                <button
+                  onClick={resume}
+                  className="mx-auto flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-emerald-500 text-base font-semibold text-white shadow-lg hover:bg-emerald-600"
+                >
+                  <PhoneCall className="size-5" /> Continue call
+                </button>
+              ) : blockedAudio ? (
+                <button
+                  onClick={() => void playBlocked()}
+                  className="mx-auto flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-white text-base font-semibold text-brand-900 shadow-lg"
+                >
+                  <Volume2 className="size-5" /> Tap to hear MomCheck
+                </button>
+              ) : (
+                <div className="flex items-end justify-center gap-6">
+                  <RoundButton label={muted ? "Unmute" : "Mute"} onClick={toggleMute} disabled={!live_} active={muted}>
+                    {muted ? <MicOff className="size-6" /> : <Mic className="size-6" />}
+                  </RoundButton>
+                  <TalkButton phase={phase} manual={manual} onClick={onTalkButton} muted={muted} />
+                  <RoundButton label="End" onClick={() => void hangUp()} disabled={phase === "ending" || phase === "loading"} danger>
+                    <PhoneOff className="size-6" />
+                  </RoundButton>
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
 
-      {/* Phone-line simulation */}
-      <PhoneLinePanel phoneLine={phoneLine} setPhoneLine={setPhoneLine} noise={noise} setNoise={setNoise} disabled={phase === "ended"} />
+        {/* Side: what MomCheck has checked so far, and the phone-line simulation */}
+        <aside className="space-y-4 px-4 pb-4 lg:pl-0 lg:pt-6">
+          {live && live.checklist.length > 0 && <SafetyPanel checklist={live.checklist} triage={live.triage} dark />}
+          <PhoneLinePanel phoneLine={phoneLine} setPhoneLine={setPhoneLine} noise={noise} setNoise={setNoise} disabled={phase === "ended"} />
+        </aside>
+      </div>
     </Shell>
   );
 }
@@ -502,7 +536,7 @@ export function CallScreen() {
 function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-brand-900 via-[#0d3f3b] to-[#082422] text-white">
-      <div className="safe-bottom mx-auto flex min-h-[100dvh] max-w-2xl flex-col">{children}</div>
+      <div className="safe-bottom mx-auto flex min-h-[100dvh] max-w-2xl flex-col lg:max-w-6xl">{children}</div>
     </div>
   );
 }
@@ -634,7 +668,7 @@ function PhoneLinePanel({
   disabled?: boolean;
 }) {
   return (
-    <div className="mx-4 mb-4 rounded-2xl bg-black/20 p-4 ring-1 ring-white/10">
+    <div className="rounded-2xl bg-black/20 p-4 ring-1 ring-white/10">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="flex items-center gap-1.5 text-sm font-semibold">
@@ -674,7 +708,10 @@ function PhoneLinePanel({
         <p className="mt-1.5 text-[11px] text-brand-100/60">
           {phoneLine
             ? `Her voice is band-limited to 300–3400 Hz, mixed with ${NOISE_LEVELS.find((n) => n.value === noise)?.hint.toLowerCase()} noise, and sent to Prisma at 8 kHz.`
-            : "Clean 16 kHz audio is sent to Prisma."}
+            : "Clean 16 kHz audio is sent to Prisma."}{" "}
+          <Link to="/quality" className="underline decoration-white/30 hover:text-white">
+            Test results
+          </Link>
         </p>
       </div>
     </div>
@@ -711,6 +748,7 @@ function ResultCard({ call, error, onRetry }: { call: Call | null; error: string
         </div>
       )}
       {call.summary && <p className="mt-3 text-sm leading-relaxed">{call.summary}</p>}
+      {call.callback_time && <p className="mt-2 text-sm font-medium text-amber-800">Call her back: {call.callback_time}</p>}
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
           to={`/women/${call.beneficiary_id}`}

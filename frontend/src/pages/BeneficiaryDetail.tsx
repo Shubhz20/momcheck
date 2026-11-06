@@ -1,13 +1,14 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, Languages, MapPin, Mic, MonitorSmartphone, NotebookPen, Pencil, Phone, PhoneCall, PhoneOutgoing, Trash2 } from "lucide-react";
+import { AskLinkCard } from "../components/AskLinkCard";
 import { api } from "../api/client";
 import type { Alert, BeneficiaryDetail, BeneficiaryInput } from "../api/types";
 import { unlockAudio } from "../audio/player";
 import { AlertCard } from "../components/AlertCard";
 import { BeneficiaryForm } from "../components/BeneficiaryForm";
 import { CallCard, isLive, liveCallPath } from "../components/CallCard";
-import { RiskBadge } from "../components/badges";
+import { OwnVoiceBadge, RiskBadge } from "../components/badges";
 import { useToast } from "../components/Toast";
 import { Avatar, Badge, Button, Card, ErrorBox, SectionHeader, Skeleton, SkeletonList, cx } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
@@ -39,6 +40,7 @@ export function BeneficiaryDetailPage() {
 
   const [calling, setCalling] = useState(false);
   const [dialing, setDialing] = useState(false);
+  const [interpreting, setInterpreting] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
@@ -67,6 +69,20 @@ export function BeneficiaryDetailPage() {
     } catch (e) {
       setCallError((e as Error).message);
       setDialing(false);
+    }
+  };
+
+  const startInterpreter = async () => {
+    if (!data) return;
+    unlockAudio();
+    setInterpreting(true);
+    setCallError(null);
+    try {
+      const call = await api.startInterpreter(data.id);
+      navigate(`/interpret/${call.id}`);
+    } catch (e) {
+      setCallError((e as Error).message);
+      setInterpreting(false);
     }
   };
 
@@ -216,9 +232,31 @@ export function BeneficiaryDetailPage() {
                   {calling ? "Connecting…" : "Start follow-up call"}
                 </Button>
               )}
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={startInterpreter}
+                loading={interpreting}
+                disabled={calling || dialing}
+                icon={<Languages className="size-5" />}
+                className="w-full sm:w-auto"
+                title="On a home visit: you speak your language, she hears hers"
+              >
+                Interpreter
+              </Button>
               <p className="flex-1 text-sm text-muted">
                 MomCheck will speak with her in {languageName(data.language)}, remind her about her next visit, and check for danger signs. Any danger
                 sign alerts you straight away.
+                {me.has_voice && me.use_own_voice && (
+                  <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <OwnVoiceBadge name={me.name} /> She'll hear MomCheck in your voice.
+                  </span>
+                )}
+                {data.language !== me.language && (
+                  <span className="mt-1 block">
+                    She speaks {languageName(data.language)}, you speak {languageName(me.language)}: on a visit, use <b>Interpreter</b>.
+                  </span>
+                )}
                 {me.is_demo && (
                   <span className="mt-1 block text-ink">
                     In this demo the call runs in your browser and you speak as {data.name.split(" ")[0]}. In a real account, MomCheck rings her
@@ -261,7 +299,9 @@ export function BeneficiaryDetailPage() {
           )}
         </section>
 
-        <section className="lg:col-span-2">
+        <section className="space-y-6 lg:col-span-2">
+          <AskLinkCard beneficiaryId={data.id} name={data.name} initialToken={data.ask_token} />
+          <div>
           <SectionHeader
             title="Visit notes"
             action={
@@ -291,8 +331,9 @@ export function BeneficiaryDetailPage() {
             <Card className="px-4 py-6 text-sm text-muted">No visit notes yet. Record a spoken note after a home visit.</Card>
           )}
 
+          </div>
           {pastAlerts.length > 0 && (
-            <div className="mt-6">
+            <div>
               <SectionHeader title="Past alerts" />
               <div className="space-y-3">
                 {pastAlerts.map((a) => (

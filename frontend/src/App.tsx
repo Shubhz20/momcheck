@@ -13,6 +13,10 @@ import { DashboardPage } from "./pages/Dashboard";
 import { LoginPage } from "./pages/Login";
 import { NotFoundPage } from "./pages/NotFound";
 import { PhoneCallPage } from "./pages/PhoneCall";
+import { AskMomCheckPage } from "./pages/AskMomCheck";
+import { InterpreterPage } from "./pages/Interpreter";
+import { SettingsPage } from "./pages/Settings";
+import { QualityPage } from "./pages/Quality";
 import { VoiceNotePage } from "./pages/VoiceNote";
 
 function SignedInRoutes() {
@@ -34,6 +38,9 @@ function SignedInRoutes() {
         <Route path="women" element={<BeneficiariesPage />} />
         <Route path="women/:id" element={<BeneficiaryDetailPage />} />
         <Route path="phone-call/:callId" element={<PhoneCallPage />} />
+        <Route path="interpret/:callId" element={<InterpreterPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="quality" element={<QualityPage />} />
         <Route path="note" element={<VoiceNotePage />} />
         <Route path="briefing" element={<BriefingPage />} />
         <Route path="*" element={<NotFoundPage />} />
@@ -49,7 +56,11 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <ErrorBoundary>
-              <SignedInRoutes />
+              <Routes>
+                {/* The mother's own page: public, her link's token is the key */}
+                <Route path="/m/:token" element={<AskMomCheckPage />} />
+                <Route path="*" element={<SignedInRoutes />} />
+              </Routes>
             </ErrorBoundary>
           </BrowserRouter>
         </AuthProvider>

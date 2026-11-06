@@ -22,6 +22,12 @@ class Asha(SQLModel, table=True):
     language: str = "hi-IN"  # language of her daily briefing
     pin_hash: Optional[str] = None  # None for the public demo accounts
     is_demo: bool = False
+    # Her own voice (Gnani voice cloning): an embedding made from a short sample she recorded with consent
+    voice_embedding: Optional[dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
+    voice_consent_at: Optional[datetime] = None
+    use_own_voice: bool = True
+    # Where she sends women: {"phc": {...}, "hospital": {...}, "anm": {...}}, each {name, phone, lat?, lng?}
+    facilities: Optional[dict[str, Any]] = Field(default=None, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -38,6 +44,9 @@ class Beneficiary(SQLModel, table=True):
     next_visit_date: Optional[date] = None
     next_visit_type: Optional[str] = None
     notes: str = ""
+    lat: Optional[float] = None  # home location, for the ASHA's map
+    lng: Optional[float] = None
+    ask_token: Optional[str] = Field(default=None, index=True)  # her personal "Ask MomCheck" link
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -49,7 +58,8 @@ class Call(SQLModel, table=True):
     language: str
     # in_progress | completed | abandoned; phone calls also: ringing | not_answered | failed
     status: str = "in_progress"
-    channel: str = "browser"  # browser | phone
+    # browser | phone | ask (she started it from her Ask MomCheck link) | interpreter (ASHA <-> her, translated)
+    channel: str = "browser"
     provider_sid: Optional[str] = None  # Twilio Call SID for phone calls
     stream_token: Optional[str] = None  # secret that the Twilio media stream must present
     outcome: Optional[str] = None  # DANGER_SIGN | ROUTINE | CALLBACK | NOT_REACHABLE
@@ -57,6 +67,9 @@ class Call(SQLModel, table=True):
     summary: Optional[str] = None
     transcript: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     extraction: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON))
+    checklist: Optional[dict[str, str]] = Field(default=None, sa_column=Column(JSON))  # item id -> ok | concern | danger
+    triage: Optional[str] = None  # red | amber | green
+    own_voice: bool = False  # MomCheck spoke in the ASHA's cloned voice
     phone_line: bool = False
     duration_sec: Optional[int] = None
     error: Optional[str] = None
@@ -73,6 +86,7 @@ class Alert(SQLModel, table=True):
     danger_signs: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     status: str = "open"  # open | acknowledged
     created_at: datetime = Field(default_factory=utcnow)
+    acknowledged_at: Optional[datetime] = None
 
 
 class Note(SQLModel, table=True):

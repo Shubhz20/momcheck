@@ -130,3 +130,49 @@ async def synthesize(
         raise SpeechError(f"TTS failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
     log.info("TTS %s %d chars %.2fs", language, len(text), time.perf_counter() - started)
     return resp.content
+
+
+# ---- Voice cloning (https://docs.gnani.ai/api/VC/voice-clone-embeddings.md) -------------------------
+VC_MODEL = "vachana-vc-v1"
+
+
+async def voice_embedding(audio: bytes, filename: str = "voice.wav") -> dict[str, Any]:
+    """Turn 5-30 s of clean speech into a speaker embedding ({embedding, shape, dtype}). Done once per voice."""
+    s = get_settings()
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(
+                f"{s.speech_base_url}/api/v1/tts/voice-clone/embeddings",
+                headers=_headers(),
+                files={"audio_file": (filename, audio, "audio/wav")},
+            )
+    except httpx.HTTPError as exc:
+        raise SpeechError(f"Voice cloning request failed: {type(exc).__name__}: {exc}") from exc
+    if resp.status_code != 200:
+        raise SpeechError(f"Voice cloning failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
+    emb = (resp.json().get("data") or {}).get("voice_clone_embedding")
+    if not isinstance(emb, dict) or not emb.get("embedding"):
+        raise SpeechError("Voice cloning returned no embedding")
+    return {"embedding": emb["embedding"], "shape": emb.get("shape") or [1, 768], "dtype": emb.get("dtype") or "torch.bfloat16"}
+
+
+async def synthesize_cloned(text: str, embedding: dict[str, Any], *, sample_rate: int = 24000, container: str = "wav") -> bytes:
+    """Speak `text` (any supported language) in a cloned voice."""
+    s = get_settings()
+    payload = {
+        "text": text,
+        "model": VC_MODEL,
+        "audio_config": {"sample_rate": sample_rate, "num_channels": 1, "sample_width": 2, "encoding": "linear_pcm", "container": container},
+        "speaker_embedding": embedding,
+    }
+    started = time.perf_counter()
+    async with _tts_lock:
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                resp = await client.post(f"{s.speech_base_url}/api/v1/tts/inference", headers=_headers(), json=payload)
+        except httpx.HTTPError as exc:
+            raise SpeechError(f"Cloned TTS request failed: {type(exc).__name__}: {exc}") from exc
+    if resp.status_code != 200:
+        raise SpeechError(f"Cloned TTS failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
+    log.info("VC TTS %d chars %.2fs", len(text), time.perf_counter() - started)
+    return resp.content

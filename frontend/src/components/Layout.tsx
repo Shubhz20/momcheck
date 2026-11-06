@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { LayoutDashboard, LogOut, Mic, RotateCcw, Sunrise, Users } from "lucide-react";
+import { AudioLines, LayoutDashboard, LogOut, Mic, RotateCcw, Sunrise, Users } from "lucide-react";
 import { api } from "../api/client";
 import { useAuth, useMe } from "../hooks/useAuth";
 import { Logo, LogoMark } from "./Logo";
@@ -13,14 +13,18 @@ const NAV: { to: string; label: string; short: string; icon: ReactNode; end?: bo
   { to: "/women", label: "Women", short: "Women", icon: <Users className="size-5" /> },
   { to: "/note", label: "Voice note", short: "Note", icon: <Mic className="size-5" /> },
   { to: "/briefing", label: "Daily briefing", short: "Briefing", icon: <Sunrise className="size-5" /> },
+  { to: "/settings", label: "My voice & settings", short: "My voice", icon: <AudioLines className="size-5" /> },
 ];
 
 function PoweredBy({ className }: { className?: string }) {
   return (
     <p className={cx("text-[11px] leading-relaxed text-muted", className)}>
-      Powered by <span className="font-medium text-brand-800">Gnani AI</span>: Prisma STT · Timbre TTS · Voice API platform
+      Powered by <span className="font-medium text-brand-800">Gnani AI</span>: Prisma STT · Timbre TTS · Voice cloning
       <br />
-      Reasoning by Gemini
+      Reasoning by Gemini ·{" "}
+      <NavLink to="/quality" className="font-medium text-brand-800 hover:underline">
+        How well it hears
+      </NavLink>
     </p>
   );
 }
@@ -136,7 +140,7 @@ export function Layout() {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-white/95 backdrop-blur md:hidden">
+      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-white/95 backdrop-blur md:hidden">
         {NAV.map((n) => (
           <NavLink
             key={n.to}

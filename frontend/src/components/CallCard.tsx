@@ -13,6 +13,7 @@ export function isLive(call: Pick<Call, "status">): boolean {
 
 /** Where a live call is shown: the in-browser call screen, or the phone-call monitor. */
 export function liveCallPath(call: Pick<Call, "id" | "channel">): string {
+  if (call.channel === "interpreter") return `/interpret/${call.id}`;
   return call.channel === "phone" ? `/phone-call/${call.id}` : `/call/${call.id}`;
 }
 
