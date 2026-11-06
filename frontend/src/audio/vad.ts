@@ -78,7 +78,7 @@ export class UtteranceDetector {
     this.setState("waiting");
   }
 
-  /** Stop listening (e.g. while Janani is speaking). Discards any partial utterance. */
+  /** Stop listening (e.g. while MomCheck is speaking). Discards any partial utterance. */
   pause() {
     this.manual = false;
     this.chunks = [];

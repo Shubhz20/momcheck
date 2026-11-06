@@ -1,4 +1,4 @@
-"""Prompts and localized messages for the Janani Saathi voice agent.
+"""Prompts and localized messages for the MomCheck voice agent.
 
 Medical content follows the danger signs printed on India's Mother and Child Protection (MCP) card.
 The agent screens and escalates; it never diagnoses or prescribes.
@@ -10,16 +10,16 @@ from jinja2 import Template
 # Spoken greeting per language. {name} is filled in per call.
 # Simple, polite phrasing — to be reviewed by native speakers.
 GREETINGS: dict[str, str] = {
-    "hi-IN": "नमस्ते {name} जी, मैं जननी साथी हूँ। आपकी आशा दीदी की तरफ़ से आपकी और बच्चे की सेहत के बारे में पूछने के लिए फ़ोन किया है। क्या अभी दो मिनट बात कर सकती हैं?",
-    "en-IN": "Hello {name}, this is Janani Saathi, calling on behalf of your ASHA didi to check on your health and your baby's. Is this a good time to talk for two minutes?",
-    "mr-IN": "नमस्कार {name} ताई, मी जननी साथी बोलतेय. तुमच्या आशा ताईंच्या वतीने तुमच्या आणि बाळाच्या तब्येतीची चौकशी करण्यासाठी फोन केला आहे. आत्ता दोन मिनिटं बोलू शकाल का?",
-    "bn-IN": "নমস্কার {name}, আমি জননী সাথী বলছি। আপনার আশা দিদির পক্ষ থেকে আপনার আর বাচ্চার শরীর কেমন আছে জানতে ফোন করেছি। এখন কি দুই মিনিট কথা বলতে পারবেন?",
-    "ta-IN": "வணக்கம் {name}, நான் ஜனனி சாத்தி பேசுகிறேன். உங்கள் ஆஷா அக்கா சார்பாக உங்கள் மற்றும் குழந்தையின் உடல்நலம் பற்றி கேட்க அழைக்கிறேன். இப்போது இரண்டு நிமிடம் பேச முடியுமா?",
-    "te-IN": "నమస్కారం {name} గారు, నేను జనని సాథీ మాట్లాడుతున్నాను. మీ ఆశా అక్క తరఫున మీ మరియు బిడ్డ ఆరోగ్యం గురించి తెలుసుకోవడానికి కాల్ చేశాను. ఇప్పుడు రెండు నిమిషాలు మాట్లాడగలరా?",
-    "kn-IN": "ನಮಸ್ಕಾರ {name} ಅವರೇ, ನಾನು ಜನನಿ ಸಾಥಿ ಮಾತನಾಡುತ್ತಿದ್ದೇನೆ. ನಿಮ್ಮ ಆಶಾ ಅಕ್ಕನ ಪರವಾಗಿ ನಿಮ್ಮ ಮತ್ತು ಮಗುವಿನ ಆರೋಗ್ಯದ ಬಗ್ಗೆ ಕೇಳಲು ಕರೆ ಮಾಡಿದ್ದೇನೆ. ಈಗ ಎರಡು ನಿಮಿಷ ಮಾತನಾಡಬಹುದೇ?",
-    "ml-IN": "നമസ്കാരം {name}, ഞാൻ ജനനി സാഥി ആണ്. നിങ്ങളുടെ ആശ ചേച്ചിക്കു വേണ്ടി നിങ്ങളുടെയും കുഞ്ഞിന്റെയും ആരോഗ്യം അന്വേഷിക്കാൻ വിളിക്കുകയാണ്. ഇപ്പോൾ രണ്ടു മിനിറ്റ് സംസാരിക്കാമോ?",
-    "gu-IN": "નમસ્તે {name} બેન, હું જનની સાથી બોલું છું. તમારા આશા બેન તરફથી તમારી અને બાળકની તબિયત વિશે પૂછવા ફોન કર્યો છે. શું અત્યારે બે મિનિટ વાત કરી શકો?",
-    "pa-IN": "ਸਤ ਸ੍ਰੀ ਅਕਾਲ {name} ਜੀ, ਮੈਂ ਜਨਨੀ ਸਾਥੀ ਬੋਲ ਰਹੀ ਹਾਂ। ਤੁਹਾਡੀ ਆਸ਼ਾ ਦੀਦੀ ਵੱਲੋਂ ਤੁਹਾਡੀ ਅਤੇ ਬੱਚੇ ਦੀ ਸਿਹਤ ਬਾਰੇ ਪੁੱਛਣ ਲਈ ਫ਼ੋਨ ਕੀਤਾ ਹੈ। ਕੀ ਹੁਣ ਦੋ ਮਿੰਟ ਗੱਲ ਕਰ ਸਕਦੇ ਹੋ?",
+    "hi-IN": "नमस्ते {name} जी, मैं मॉमचेक से बोल रही हूँ। आपकी आशा दीदी की तरफ़ से आपकी और बच्चे की सेहत के बारे में पूछने के लिए फ़ोन किया है। क्या अभी दो मिनट बात कर सकती हैं?",
+    "en-IN": "Hello {name}, this is MomCheck, calling on behalf of your ASHA didi to check on your health and your baby's. Is this a good time to talk for two minutes?",
+    "mr-IN": "नमस्कार {name} ताई, मी मॉमचेकमधून बोलतेय. तुमच्या आशा ताईंच्या वतीने तुमच्या आणि बाळाच्या तब्येतीची चौकशी करण्यासाठी फोन केला आहे. आत्ता दोन मिनिटं बोलू शकाल का?",
+    "bn-IN": "নমস্কার {name}, আমি মমচেক থেকে বলছি। আপনার আশা দিদির পক্ষ থেকে আপনার আর বাচ্চার শরীর কেমন আছে জানতে ফোন করেছি। এখন কি দুই মিনিট কথা বলতে পারবেন?",
+    "ta-IN": "வணக்கம் {name}, நான் மாம்செக்கிலிருந்து பேசுகிறேன். உங்கள் ஆஷா அக்கா சார்பாக உங்கள் மற்றும் குழந்தையின் உடல்நலம் பற்றி கேட்க அழைக்கிறேன். இப்போது இரண்டு நிமிடம் பேச முடியுமா?",
+    "te-IN": "నమస్కారం {name} గారు, నేను మామ్‌చెక్ నుండి మాట్లాడుతున్నాను. మీ ఆశా అక్క తరఫున మీ మరియు బిడ్డ ఆరోగ్యం గురించి తెలుసుకోవడానికి కాల్ చేశాను. ఇప్పుడు రెండు నిమిషాలు మాట్లాడగలరా?",
+    "kn-IN": "ನಮಸ್ಕಾರ {name} ಅವರೇ, ನಾನು ಮಾಮ್‌ಚೆಕ್‌ನಿಂದ ಮಾತನಾಡುತ್ತಿದ್ದೇನೆ. ನಿಮ್ಮ ಆಶಾ ಅಕ್ಕನ ಪರವಾಗಿ ನಿಮ್ಮ ಮತ್ತು ಮಗುವಿನ ಆರೋಗ್ಯದ ಬಗ್ಗೆ ಕೇಳಲು ಕರೆ ಮಾಡಿದ್ದೇನೆ. ಈಗ ಎರಡು ನಿಮಿಷ ಮಾತನಾಡಬಹುದೇ?",
+    "ml-IN": "നമസ്കാരം {name}, ഞാൻ മോംചെക്കിൽ നിന്നാണ്. നിങ്ങളുടെ ആശ ചേച്ചിക്കു വേണ്ടി നിങ്ങളുടെയും കുഞ്ഞിന്റെയും ആരോഗ്യം അന്വേഷിക്കാൻ വിളിക്കുകയാണ്. ഇപ്പോൾ രണ്ടു മിനിറ്റ് സംസാരിക്കാമോ?",
+    "gu-IN": "નમસ્તે {name} બેન, હું મૉમચેકમાંથી બોલું છું. તમારા આશા બેન તરફથી તમારી અને બાળકની તબિયત વિશે પૂછવા ફોન કર્યો છે. શું અત્યારે બે મિનિટ વાત કરી શકો?",
+    "pa-IN": "ਸਤ ਸ੍ਰੀ ਅਕਾਲ {name} ਜੀ, ਮੈਂ ਮੌਮਚੈਕ ਤੋਂ ਬੋਲ ਰਹੀ ਹਾਂ। ਤੁਹਾਡੀ ਆਸ਼ਾ ਦੀਦੀ ਵੱਲੋਂ ਤੁਹਾਡੀ ਅਤੇ ਬੱਚੇ ਦੀ ਸਿਹਤ ਬਾਰੇ ਪੁੱਛਣ ਲਈ ਫ਼ੋਨ ਕੀਤਾ ਹੈ। ਕੀ ਹੁਣ ਦੋ ਮਿੰਟ ਗੱਲ ਕਰ ਸਕਦੇ ਹੋ?",
 }
 
 END_MESSAGES: dict[str, str] = {
@@ -63,7 +63,7 @@ POSTNATAL_DANGER_SIGNS = [
 ]
 
 AGENT_SYSTEM_PROMPT = Template(
-    """You are "Janani Saathi", a warm, patient maternal-health follow-up assistant calling on behalf of {{ asha_name }}, the ASHA worker of {{ village }}. You speak to women in rural and semi-urban India on ordinary phone lines.
+    """You are "MomCheck", a warm, patient maternal-health follow-up assistant calling on behalf of {{ asha_name }}, the ASHA worker of {{ village }}. You speak to women in rural and semi-urban India on ordinary phone lines.
 
 ## Who you are calling
 - Name: {{ name }}
@@ -75,6 +75,7 @@ AGENT_SYSTEM_PROMPT = Template(
 ## Language
 - Speak in {{ language_name }} using simple, everyday spoken words, not textbook language. If she mixes English words (or Hindi) into her speech, it is fine to mix the same way.
 - If she clearly prefers another language, switch to it.
+- If you say your name in an Indian language, write it in that script so it is pronounced well: मॉमचेक (Hindi, Marathi), মমচেক (Bengali), மாம்செக் (Tamil), మామ్‌చెక్ (Telugu), ಮಾಮ್‌ಚೆಕ್ (Kannada), മോംചെക്ക് (Malayalam), મૉમચેક (Gujarati), ਮੌਮਚੈਕ (Punjabi).
 - Keep every reply to one or two short sentences. Ask only ONE question at a time and wait for her answer.
 
 ## Call flow
@@ -100,7 +101,7 @@ AGENT_SYSTEM_PROMPT = Template(
 - After delivery: breastfeed within one hour and exclusively for six months, keep the baby warm, and keep the cord clean and dry.
 
 ## Rules
-- Never ask for Aadhaar, bank details, OTPs or money. If she asks, say Janani Saathi never asks for these.
+- Never ask for Aadhaar, bank details, OTPs or money. If she asks, say MomCheck never asks for these.
 - Do not make promises about money, appointments or doctors.
 - You are an assistant, not a doctor. Be honest if you are unsure.
 """

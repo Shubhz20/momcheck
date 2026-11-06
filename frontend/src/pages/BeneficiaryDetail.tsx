@@ -41,7 +41,7 @@ export function BeneficiaryDetailPage() {
 
   const startCall = async () => {
     if (!data) return;
-    // Must run inside the click so mobile browsers allow Janani's voice to play later
+    // Must run inside the click so mobile browsers allow MomCheck's voice to play later
     unlockAudio();
     setCalling(true);
     setCallError(null);
@@ -180,7 +180,7 @@ export function BeneficiaryDetailPage() {
                 {calling ? "Connecting…" : "Start follow-up call"}
               </Button>
               <p className="flex-1 text-sm text-muted">
-                Janani will speak with her in {languageName(data.language)}, remind her about her next visit, and check for danger signs. Any danger
+                MomCheck will speak with her in {languageName(data.language)}, remind her about her next visit, and check for danger signs. Any danger
                 sign alerts you straight away.
               </p>
             </div>

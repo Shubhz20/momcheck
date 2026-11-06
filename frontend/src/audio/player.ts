@@ -1,5 +1,5 @@
 /**
- * A single shared <audio> element for Janani's voice.
+ * A single shared <audio> element for MomCheck's voice.
  * Mobile Safari only lets audio play after a user gesture, so unlockAudio() is called from the
  * "Start follow-up call" click. Reusing the same element keeps it unlocked for later replies.
  */
@@ -41,7 +41,7 @@ export function playClip(src: string): Promise<"ended" | "stopped"> {
     };
     a.onerror = () => {
       pending = null;
-      reject(new Error("Couldn't play Janani's reply."));
+      reject(new Error("Couldn't play MomCheck's reply."));
     };
     a.src = src;
     a.currentTime = 0;
@@ -49,7 +49,7 @@ export function playClip(src: string): Promise<"ended" | "stopped"> {
       pending = null;
       a.onended = null;
       a.onerror = null;
-      if (e instanceof DOMException && e.name === "NotAllowedError") reject(new AutoplayBlockedError("Tap to hear Janani"));
+      if (e instanceof DOMException && e.name === "NotAllowedError") reject(new AutoplayBlockedError("Tap to hear MomCheck"));
       else reject(e instanceof Error ? e : new Error(String(e)));
     });
   });

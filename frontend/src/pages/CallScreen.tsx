@@ -213,7 +213,7 @@ export function CallScreen() {
       void hangUp();
       return;
     }
-    // Small gap so the tail of Janani's voice isn't picked up as speech
+    // Small gap so the tail of MomCheck's voice isn't picked up as speech
     window.setTimeout(() => void startListening(), 250);
   }, [hangUp, startListening]);
 
@@ -234,7 +234,7 @@ export function CallScreen() {
         if (e instanceof AutoplayBlockedError) {
           setBlockedAudio(reply.reply_audio);
         } else {
-          setNotice("Couldn't play Janani's voice. Her reply is shown below.");
+          setNotice("Couldn't play MomCheck's voice. The reply is shown below.");
           afterSpeech();
         }
       }
@@ -314,7 +314,7 @@ export function CallScreen() {
   const onTalkButton = () => {
     const vad = vadRef.current;
     if (phase === "speaking") {
-      // Interrupt Janani and answer now
+      // Interrupt MomCheck and answer now
       stopClip();
       setBlockedAudio(null);
       afterSpeech();
@@ -345,7 +345,7 @@ export function CallScreen() {
       const r = await playClip(src);
       if (r === "ended") afterSpeech();
     } catch {
-      setNotice("Couldn't play Janani's voice. Her reply is shown below.");
+      setNotice("Couldn't play MomCheck's voice. The reply is shown below.");
       afterSpeech();
     }
   };
@@ -361,10 +361,10 @@ export function CallScreen() {
   const status: Record<Phase, ReactNode> = {
     loading: "Connecting…",
     resume: "Call paused",
-    speaking: blockedAudio ? "Tap to hear Janani" : "Janani is speaking…",
+    speaking: blockedAudio ? "Tap to hear MomCheck" : "MomCheck is speaking…",
     listening: muted ? "Muted" : manual ? "Recording…" : "Listening… speak now",
     hearing: manual ? "Recording… tap when done" : "Hearing you…",
-    thinking: "Janani is thinking…",
+    thinking: "MomCheck is thinking…",
     ending: "Ending call and reviewing…",
     ended: "Call ended",
     fatal: "Can't continue",
@@ -435,7 +435,7 @@ export function CallScreen() {
           <div key={i} className={cx("flex", t.role === "assistant" ? "justify-start" : "justify-end")}>
             <div className={cx("max-w-[85%]", t.role === "user" && "text-right")}>
               <div className={cx("mb-0.5 text-[10.5px] font-semibold uppercase tracking-wide", t.role === "assistant" ? "text-brand-200" : "text-blush-200")}>
-                {t.role === "assistant" ? "Janani" : name}
+                {t.role === "assistant" ? "MomCheck" : name}
                 {t.phoneLine && <span className="ml-1.5 font-normal normal-case text-white/50">📞 8 kHz</span>}
               </div>
               <div
@@ -477,7 +477,7 @@ export function CallScreen() {
               onClick={() => void playBlocked()}
               className="mx-auto flex h-14 w-full max-w-xs items-center justify-center gap-2 rounded-full bg-white text-base font-semibold text-brand-900 shadow-lg"
             >
-              <Volume2 className="size-5" /> Tap to hear Janani
+              <Volume2 className="size-5" /> Tap to hear MomCheck
             </button>
           ) : (
             <div className="flex items-end justify-center gap-6">

@@ -133,7 +133,7 @@ export function DashboardPage() {
             </div>
           }
         >
-          Add the pregnant women and new mothers you look after. Janani Saathi will call each of them in her own language, check for danger
+          Add the pregnant women and new mothers you look after. MomCheck will call each of them in her own language, check for danger
           signs, and alert you right away.
         </EmptyState>
       </>
@@ -228,7 +228,7 @@ export function DashboardPage() {
           title={`${data.languages.length || 10} Indian languages`}
           subtitle={
             enabledLangs.length === data.languages.length
-              ? "Janani can speak with every woman in her own language"
+              ? "MomCheck can speak with every woman in her own language"
               : `${enabledLangs.length} of ${data.languages.length} ready for calls`
           }
           action={<Languages className="size-5 text-muted" />}

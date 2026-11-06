@@ -80,7 +80,7 @@ export function VoiceNotePage() {
 
   return (
     <>
-      <PageHeader title="Voice note" subtitle="After a home visit, say what you did in your own words. Janani Saathi writes it down." />
+      <PageHeader title="Voice note" subtitle="After a home visit, say what you did in your own words. MomCheck writes it down." />
 
       {step === "record" || step === "transcribing" ? (
         <Card className="mx-auto max-w-xl p-6 text-center md:p-10">

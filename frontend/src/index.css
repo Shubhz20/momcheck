@@ -57,7 +57,7 @@ body {
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 
-/* Call screen: "Janani is speaking" equaliser and "thinking" dots */
+/* Call screen: "MomCheck is speaking" equaliser and "thinking" dots */
 @keyframes eq {
   0%, 100% { transform: scaleY(0.3); }
   50% { transform: scaleY(1); }

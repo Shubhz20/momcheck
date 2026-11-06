@@ -47,7 +47,7 @@ export function Layout() {
         </nav>
         <div className="mt-auto rounded-xl bg-blush-50 p-3">
           <p className="text-xs leading-relaxed text-blush-600">
-            Screening and reminders only. Janani Saathi never diagnoses. Every danger sign goes to a health worker.
+            Screening and reminders only. MomCheck never diagnoses. Every danger sign goes to a health worker.
           </p>
         </div>
         <PoweredBy className="mt-4 px-1" />
@@ -57,7 +57,7 @@ export function Layout() {
       <header className="sticky top-0 z-30 flex items-center gap-2.5 border-b border-line bg-canvas/90 px-4 py-3 backdrop-blur md:hidden">
         <LogoMark className="size-8" />
         <div className="leading-tight">
-          <div className="text-[15px] font-semibold text-ink">Janani Saathi</div>
+          <div className="text-[15px] font-semibold text-ink">MomCheck</div>
           <div className="text-[10.5px] text-muted">Maternal follow-up calls, in every Indian language</div>
         </div>
       </header>

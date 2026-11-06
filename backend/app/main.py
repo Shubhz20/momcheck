@@ -1,4 +1,4 @@
-"""Janani Saathi API (FastAPI). Serves the built React app from frontend/dist as well."""
+"""MomCheck API (FastAPI). Serves the built React app from frontend/dist as well."""
 from __future__ import annotations
 
 import logging
@@ -24,7 +24,7 @@ from .services.serialize import alert_out, beneficiary_out, call_out, note_out, 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
-app = FastAPI(title="Janani Saathi", version="1.0.0")
+app = FastAPI(title="MomCheck", version="1.0.0")
 
 MAX_AUDIO_BYTES = 6 * 1024 * 1024
 

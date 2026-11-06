@@ -34,7 +34,7 @@ class Settings:
             if m.strip()
         ]
 
-        self.database_url = self._normalise_db_url(_env("DATABASE_URL", f"sqlite:///{ROOT_DIR / 'janani.db'}"))
+        self.database_url = self._normalise_db_url(_env("DATABASE_URL", f"sqlite:///{ROOT_DIR / 'momcheck.db'}"))
         self.asha_name = _env("ASHA_NAME", "Asha didi")
         self.max_turns = int(_env("MAX_CALL_TURNS", "14"))
 

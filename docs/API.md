@@ -1,4 +1,4 @@
-# Janani Saathi: Backend API
+# MomCheck: Backend API
 
 All routes are under `/api` and use JSON unless noted. Dates are `YYYY-MM-DD`; timestamps are ISO 8601 UTC.
 
@@ -53,9 +53,9 @@ interface Call {
 interface TurnReply {
   user_text: string | null;          // what Prisma heard (null for the opening greeting)
   detected_language: string | null;
-  reply_text: string;                // what Janani says, in her language
+  reply_text: string;                // what MomCheck says, in her language
   reply_audio: string;               // data URL, e.g. "data:audio/mpeg;base64,..." (Timbre TTS)
-  end_call: boolean;                 // true when Janani has said goodbye -> client should POST /end
+  end_call: boolean;                 // true when MomCheck has said goodbye -> client should POST /end
   alert_raised: boolean;             // true if a danger sign was detected in this turn (alert created)
   timings: { stt_ms: number | null; llm_ms: number; tts_ms: number };
 }
@@ -112,7 +112,7 @@ interface Dashboard {
 | GET | `/api/beneficiaries/{id}` | | `Beneficiary & { calls: Call[]; notes: Note[]; alerts: Alert[] }` |
 | PATCH | `/api/beneficiaries/{id}` | any POST field | `Beneficiary` |
 | DELETE | `/api/beneficiaries/{id}` | | `{ ok: true }` |
-| POST | `/api/beneficiaries/{id}/call` | | `{ call: Call; reply: TurnReply }`: starts a voice call, `reply` is Janani's spoken greeting |
+| POST | `/api/beneficiaries/{id}/call` | | `{ call: Call; reply: TurnReply }`: starts a voice call, `reply` is MomCheck's spoken greeting |
 | GET | `/api/calls/{id}` | | `Call` |
 | POST | `/api/calls/{id}/turn` | multipart: `audio` (WAV mono, 8 or 16 kHz, ≤ 30 s), `phone_line` (`"true"`/`"false"`) | `TurnReply` |
 | POST | `/api/calls/{id}/end` | | `Call` (analysed: outcome, danger signs, summary; alerts created) |

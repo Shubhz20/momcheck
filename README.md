@@ -1,10 +1,10 @@
-# Janani Saathi
+# MomCheck
 
 **A voice assistant that follows up with pregnant women and new mothers in 10 Indian languages, and alerts the ASHA worker the moment something is wrong.**
 
 An ASHA worker looks after every pregnant woman and newborn in her village. Following up with each of them means walking door to door or making calls from her own phone. When a danger sign is missed, the referral comes late.
 
-Janani Saathi takes over the routine follow-up conversation. In the woman's own language, Janani:
+MomCheck takes over the routine follow-up conversation. In the woman's own language, MomCheck:
 
 - greets her by name and checks on her and her baby,
 - asks the standard danger-sign questions from the Mother and Child Protection card (bleeding, swelling, severe headache, fever, reduced baby movement and others), one at a time,
@@ -13,11 +13,11 @@ Janani Saathi takes over the routine follow-up conversation. In the woman's own 
 
 When the call ends, the ASHA sees an English summary, the outcome and the full transcript on her dashboard. She can also record a spoken note after a home visit, and it is saved as a structured record. Each morning she gets a **spoken briefing** in her own language.
 
-> **Safety:** Janani Saathi screens and escalates. It never diagnoses or prescribes, and every danger sign goes to a human health worker. All names and numbers in this project are synthetic.
+> **Safety:** MomCheck screens and escalates. It never diagnoses or prescribes, and every danger sign goes to a human health worker. All names and numbers in this project are synthetic.
 
 ## How it works
 
-Janani's voice conversation is our own agent loop, built on Gnani AI's speech models:
+MomCheck's voice conversation is our own agent loop, built on Gnani AI's speech models:
 
 ```
  her voice ──▶ [Phone-line simulation: 8 kHz, noise] ──▶ Gnani Prisma STT (prisma-v3.0, her language + English)
@@ -32,7 +32,7 @@ Janani's voice conversation is our own agent loop, built on Gnani AI's speech mo
 | Gnani AI technology | Used for |
 |---|---|
 | **Prisma STT** (REST, `prisma-v3.0`) | Every turn of the conversation; a language pair (her language plus English) handles code-mixed speech like Hinglish and Tanglish; key terms (her name, village, "PHC") improve accuracy; also used for the ASHA's voice notes |
-| **Timbre TTS** (REST, `timbre-v3.0`, voice *Chetana*) | Janani's spoken replies in all 10 languages, plus the ASHA's daily briefing |
+| **Timbre TTS** (REST, `timbre-v3.0`, voice *Chetana*) | MomCheck's spoken replies in all 10 languages, plus the ASHA's daily briefing |
 
 **Gemini** (Google) does the reasoning: the conversation, the end-of-call review, extracting fields from voice notes, and writing the briefing.
 
@@ -40,7 +40,7 @@ Janani's voice conversation is our own agent loop, built on Gnani AI's speech mo
 Hindi · English/Hinglish · Bengali · Gujarati · Kannada · Malayalam · Marathi · Punjabi · Tamil · Telugu
 
 ### Noisy phone lines
-The call screen has a **phone-line mode**. It downsamples the microphone audio to 8 kHz, band-limits it to 300–3400 Hz and mixes in background noise before sending it to Prisma, so we can see how Janani copes with real-world call quality. [`eval/noise_eval.py`](eval/noise_eval.py) measures this systematically across all 10 languages; results are in [`eval/REPORT.md`](eval/REPORT.md).
+The call screen has a **phone-line mode**. It downsamples the microphone audio to 8 kHz, band-limits it to 300–3400 Hz and mixes in background noise before sending it to Prisma, so we can see how MomCheck copes with real-world call quality. [`eval/noise_eval.py`](eval/noise_eval.py) measures this systematically across all 10 languages; results are in [`eval/REPORT.md`](eval/REPORT.md).
 
 ## Run locally
 

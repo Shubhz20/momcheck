@@ -16,7 +16,7 @@ export function Logo() {
     <div className="flex items-center gap-2.5">
       <LogoMark />
       <div className="leading-tight">
-        <div className="text-[15px] font-semibold text-ink">Janani Saathi</div>
+        <div className="text-[15px] font-semibold text-ink">MomCheck</div>
         <div className="text-[11px] text-muted">Maternal follow-up calls, in every Indian language</div>
       </div>
     </div>

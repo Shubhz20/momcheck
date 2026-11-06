@@ -1,7 +1,7 @@
 # Render blueprint: one free web service (Docker). Secrets are entered in the Render dashboard.
 services:
   - type: web
-    name: janani-saathi
+    name: momcheck
     runtime: docker
     plan: free
     region: singapore

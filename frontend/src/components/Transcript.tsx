@@ -11,7 +11,7 @@ export function Transcript({ turns }: { turns: TranscriptTurn[] }) {
           <div key={i} className={cx("flex", isAgent ? "justify-start" : "justify-end")}>
             <div className={cx("max-w-[85%]", isAgent ? "" : "text-right")}>
               <div className={cx("mb-0.5 text-[11px] font-medium uppercase tracking-wide", isAgent ? "text-brand-700" : "text-blush-600")}>
-                {isAgent ? "Janani Saathi" : "Mother"}
+                {isAgent ? "MomCheck" : "Mother"}
                 {t.language ? <span className="ml-1 normal-case text-muted">· {t.language}</span> : null}
               </div>
               <div

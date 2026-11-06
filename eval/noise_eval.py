@@ -1,4 +1,4 @@
-"""Noise robustness evaluation for Janani Saathi (synthetic data only).
+"""Noise robustness evaluation for MomCheck (synthetic data only).
 
 For each language, scripted replies a woman might give on a follow-up call are spoken by Gnani Timbre TTS,
 degraded to phone-line quality (8 kHz band 300-3400 Hz, G.711 mu-law codec) plus background noise at several
