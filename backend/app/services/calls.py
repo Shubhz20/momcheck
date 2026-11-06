@@ -95,7 +95,7 @@ def _system_prompt(session: Session, b: Beneficiary, call: Call) -> str:
         language_name=language_name(b.language),
         hospital=_facility_name(asha, "hospital"),
         phc=_facility_name(asha, "phc"),
-        mode="ask" if call.channel == "ask" else "followup",
+        mode=call.channel if call.channel in ("ask", "checkin") else "followup",
         own_voice=call.own_voice,
     )
 
@@ -215,7 +215,7 @@ async def start_call(session: Session, b: Beneficiary, phone_line: bool = True, 
     """Start a follow-up call (channel browser) or one she started from her link (channel ask)."""
     voice = voice_for(session, b)
     name = b.name.split()[0] if channel in ("ask", "checkin") else b.name
-    greeting = prompts.greeting_for(b.language, name, own_voice=bool(voice), mode="ask" if channel == "ask" else "followup")
+    greeting = prompts.greeting_for(b.language, name, own_voice=bool(voice), mode=channel if channel in ("ask", "checkin") else "followup")
     call = Call(
         beneficiary_id=b.id,
         language=b.language,

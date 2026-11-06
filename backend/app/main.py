@@ -782,7 +782,7 @@ async def voice_preview(request: Request, language: str = Query("hi-IN"), asha: 
         raise HTTPException(404, "Record your voice first.")
     if language not in LANGUAGES:
         raise HTTPException(400, f"Unsupported language {language}")
-    text = prompts.greeting_for(language, "Sunita", own_voice=True)
+    text = prompts.greeting_for(language, "Sunita", own_voice=True, mode="checkin")
     try:
         audio, _, _ = await calls.speak(text, language, False, asha.voice_embedding)
     except SpeechError as exc:

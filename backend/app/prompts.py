@@ -65,6 +65,34 @@ ASK_GREETINGS: dict[str, str] = {
     "pa-IN": "ਸਤ ਸ੍ਰੀ ਅਕਾਲ {name} ਜੀ, ਮੈਂ ਮੌਮਚੈਕ ਹਾਂ। ਦੱਸੋ, ਅੱਜ ਤੁਸੀਂ ਆਪਣੀ ਜਾਂ ਬੱਚੇ ਦੀ ਸਿਹਤ ਬਾਰੇ ਕੀ ਪੁੱਛਣਾ ਚਾਹੁੰਦੇ ਹੋ?",
 }
 
+# Greeting when she opens her own link for a scheduled check-in: it is her, so go straight to how she feels.
+CHECKIN_GREETINGS: dict[str, str] = {
+    "hi-IN": "नमस्ते {name} जी, मैं मॉमचेक हूँ। आज आप कैसा महसूस कर रही हैं?",
+    "en-IN": "Hello {name}, this is MomCheck. How are you feeling today?",
+    "mr-IN": "नमस्कार {name} ताई, मी मॉमचेक. आज तुम्हाला कसं वाटतंय?",
+    "bn-IN": "নমস্কার {name}, আমি মমচেক। আজ আপনি কেমন বোধ করছেন?",
+    "ta-IN": "வணக்கம் {name}, நான் மாம்செக். இன்று உங்களுக்கு எப்படி இருக்கிறது?",
+    "te-IN": "నమస్కారం {name} గారు, నేను మామ్‌చెక్. ఈరోజు మీకు ఎలా అనిపిస్తోంది?",
+    "kn-IN": "ನಮಸ್ಕಾರ {name} ಅವರೇ, ನಾನು ಮಾಮ್‌ಚೆಕ್. ಇಂದು ನಿಮಗೆ ಹೇಗೆ ಅನಿಸುತ್ತಿದೆ?",
+    "ml-IN": "നമസ്കാരം {name}, ഞാൻ മോംചെക്ക് ആണ്. ഇന്ന് നിങ്ങൾക്ക് എങ്ങനെയുണ്ട്?",
+    "gu-IN": "નમસ્તે {name} બેન, હું મૉમચેક છું. આજે તમને કેવું લાગે છે?",
+    "pa-IN": "ਸਤ ਸ੍ਰੀ ਅਕਾਲ {name} ਜੀ, ਮੈਂ ਮੌਮਚੈਕ ਹਾਂ। ਅੱਜ ਤੁਸੀਂ ਕਿਵੇਂ ਮਹਿਸੂਸ ਕਰ ਰਹੇ ਹੋ?",
+}
+
+# The same, when MomCheck speaks in her ASHA's cloned voice (it still says it is an automated assistant).
+CHECKIN_OWN_VOICE_GREETINGS: dict[str, str] = {
+    "hi-IN": "नमस्ते {name} जी, मैं मॉमचेक हूँ, एक ऑटोमैटिक सहायक, आपकी आशा दीदी की आवाज़ में। आज आप कैसा महसूस कर रही हैं?",
+    "en-IN": "Hello {name}, this is MomCheck, an automated assistant, in your ASHA didi's voice. How are you feeling today?",
+    "mr-IN": "नमस्कार {name} ताई, मी मॉमचेक, एक स्वयंचलित सहाय्यक, तुमच्या आशा ताईंच्या आवाजात. आज तुम्हाला कसं वाटतंय?",
+    "bn-IN": "নমস্কার {name}, আমি মমচেক, একটি স্বয়ংক্রিয় সহকারী, আপনার আশা দিদির গলায়। আজ আপনি কেমন বোধ করছেন?",
+    "ta-IN": "வணக்கம் {name}, நான் மாம்செக், ஒரு தானியங்கி உதவியாளர், உங்கள் ஆஷா அக்காவின் குரலில். இன்று உங்களுக்கு எப்படி இருக்கிறது?",
+    "te-IN": "నమస్కారం {name} గారు, నేను మామ్‌చెక్, ఒక ఆటోమేటిక్ సహాయకురాలిని, మీ ఆశా అక్క గొంతుతో. ఈరోజు మీకు ఎలా అనిపిస్తోంది?",
+    "kn-IN": "ನಮಸ್ಕಾರ {name} ಅವರೇ, ನಾನು ಮಾಮ್‌ಚೆಕ್, ಒಂದು ಸ್ವಯಂಚಾಲಿತ ಸಹಾಯಕ, ನಿಮ್ಮ ಆಶಾ ಅಕ್ಕನ ಧ್ವನಿಯಲ್ಲಿ. ಇಂದು ನಿಮಗೆ ಹೇಗೆ ಅನಿಸುತ್ತಿದೆ?",
+    "ml-IN": "നമസ്കാരം {name}, ഞാൻ മോംചെക്ക്, ഒരു ഓട്ടോമാറ്റിക് സഹായി, നിങ്ങളുടെ ആശ ചേച്ചിയുടെ ശബ്ദത്തിൽ. ഇന്ന് നിങ്ങൾക്ക് എങ്ങനെയുണ്ട്?",
+    "gu-IN": "નમસ્તે {name} બેન, હું મૉમચેક છું, એક ઑટોમેટિક સહાયક, તમારા આશા બેનના અવાજમાં. આજે તમને કેવું લાગે છે?",
+    "pa-IN": "ਸਤ ਸ੍ਰੀ ਅਕਾਲ {name} ਜੀ, ਮੈਂ ਮੌਮਚੈਕ ਹਾਂ, ਇੱਕ ਆਟੋਮੈਟਿਕ ਸਹਾਇਕ, ਤੁਹਾਡੀ ਆਸ਼ਾ ਦੀਦੀ ਦੀ ਆਵਾਜ਼ ਵਿੱਚ। ਅੱਜ ਤੁਸੀਂ ਕਿਵੇਂ ਮਹਿਸੂਸ ਕਰ ਰਹੇ ਹੋ?",
+}
+
 # What the ASHA reads aloud to give MomCheck her voice. Reading it is also her spoken consent.
 VOICE_SCRIPTS: dict[str, str] = {
     "hi-IN": "मैं {name} हूँ, {area} की आशा कार्यकर्ता। मैं सहमति देती हूँ कि मॉमचेक मेरी आवाज़ में मेरी गर्भवती महिलाओं और नई माताओं से बात करे। मॉमचेक हमेशा बताएगा कि वह एक ऑटोमैटिक सहायक है। अपना और अपने बच्चे का ध्यान रखिए।",
@@ -76,6 +104,7 @@ VOICE_SCRIPTS: dict[str, str] = {
 AGENT_SYSTEM_PROMPT = Template(
     """You are "MomCheck", a warm, patient maternal-health assistant working for {{ asha_name }}, the ASHA worker of {{ village }}.
 {% if mode == "ask" %}{{ name }} opened her personal "Ask MomCheck" link on her own phone and started this conversation. She may have a question or a worry.
+{% elif mode == "checkin" %}{{ name }} opened her own MomCheck link on her phone for her scheduled check-in, so it is her and she has time to talk. You have already greeted her and asked how she is feeling.
 {% else %}You are on a follow-up call with a woman in rural or semi-urban India, on an ordinary phone line.
 {% endif %}{% if own_voice %}You speak in {{ asha_name }}'s own voice, cloned with her permission. If she asks whether you are {{ asha_name }}, say honestly that you are MomCheck, an automated assistant using {{ asha_name }}'s voice with her permission, and that {{ asha_name }} reads every conversation.
 {% endif %}
@@ -90,7 +119,7 @@ AGENT_SYSTEM_PROMPT = Template(
 - Speak in {{ language_name }} using simple, everyday spoken words, not textbook language. If she mixes English words (or Hindi) into her speech, it is fine to mix the same way.
 - If she clearly prefers another language, switch to it.
 - If you say your name in an Indian language, write it in that script so it is pronounced well: मॉमचेक (Hindi, Marathi), মমচেক (Bengali), மாம்செக் (Tamil), మామ్‌చెక్ (Telugu), ಮಾಮ್‌ಚೆಕ್ (Kannada), മോംചെക്ക് (Malayalam), મૉમચેક (Gujarati), ਮੌਮਚੈਕ (Punjabi).
-- {{ asha_name }} is the ASHA worker. Refer to her the way women in your language respectfully would (for example "Meena didi" in Hindi, "Savita tai" in Marathi, "Selvi akka" in Tamil).
+- {{ asha_name }} is the ASHA worker. Refer to her by her first name the way women in your language respectfully would (for example "{{ asha_first }} didi" in Hindi, "{{ asha_first }} tai" in Marathi, "{{ asha_first }} akka" in Tamil), and use the same name in "reply_en".
 - Write every name (hers, {{ asha_name }}'s, places) in the script of the language you are speaking, e.g. सविता in Hindi or Marathi, সবিতা in Bengali, சவிதா in Tamil.
 - Keep every reply to one or two short sentences. Ask only ONE question at a time and wait for her answer.
 
@@ -102,6 +131,9 @@ AGENT_SYSTEM_PROMPT = Template(
 2. If what she describes could be a danger sign, ask one or two follow-up questions to understand it.
 3. Then gently check the most important rows she has not mentioned (bleeding{% if category == "postnatal" %}, the baby's feeding and breathing{% else %}, the baby's movements{% endif %}). Do not go through the whole checklist.
 4. Ask if there is anything else, then end warmly.
+{% elif mode == "checkin" %}1. Listen to how she is feeling, then go through the checklist rows above in order, one question at a time.{% if category == "postnatal" %} Ask about her own recovery first, then the two mood questions gently and without judgement, then the baby.{% endif %}
+2. Remind her about her next visit ({{ next_visit_line }}).
+3. Ask if she has any question, answer briefly using only the facts below, then end warmly.
 {% else %}1. Confirm you are speaking with {{ name }}. If someone else answers (a shared phone), do not mention her health or pregnancy; politely ask when {{ name }} will be available, thank them and end the call.
 2. If she says it is not a good time, ask when to call back, thank her and end the call.
 3. Go through the checklist rows above in order, one question at a time.{% if category == "postnatal" %} Ask about her own recovery first, then the two mood questions gently and without judgement, then the baby.{% endif %}
@@ -177,6 +209,7 @@ def render_system_prompt(
         name=name,
         village=village or "her village",
         asha_name=asha_name,
+        asha_first=(asha_name.split() or ["ASHA"])[0],
         status_line=status_line,
         next_visit_line=next_visit_line,
         today=today,
@@ -194,7 +227,12 @@ def render_system_prompt(
 
 
 def greeting_for(language: str, name: str, *, own_voice: bool = False, mode: str = "followup") -> str:
-    table = ASK_GREETINGS if mode == "ask" else OWN_VOICE_GREETINGS if own_voice else GREETINGS
+    if mode == "ask":
+        table = ASK_GREETINGS
+    elif mode == "checkin":
+        table = CHECKIN_OWN_VOICE_GREETINGS if own_voice else CHECKIN_GREETINGS
+    else:
+        table = OWN_VOICE_GREETINGS if own_voice else GREETINGS
     return table.get(language, table["en-IN"]).format(name=name)
 
 

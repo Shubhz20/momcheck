@@ -5,6 +5,7 @@ to say. Models are tried in order (GEMINI_MODEL, then GEMINI_FALLBACK_MODELS) wh
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -75,19 +76,19 @@ async def chat_json(system: str, history: list[tuple[str, str]], *, temperature:
     usage.check("llm_requests")
 
     contents = [types.Content(role=role, parts=[types.Part(text=text)]) for role, text in history]
-    try:
-        resp = await _generate(
-            contents,
-            types.GenerateContentConfig(
-                system_instruction=system, temperature=temperature, response_mime_type="application/json"
-            ),
-        )
-    except Exception as exc:
-        raise LLMError(f"Gemini request failed: {exc}") from exc
-    try:
-        return _parse_json(resp.text or "")
-    except (ValueError, LLMError) as exc:
-        raise LLMError(f"Gemini returned invalid JSON: {exc}") from exc
+    config = types.GenerateContentConfig(system_instruction=system, temperature=temperature, response_mime_type="application/json")
+    last: Exception | None = None
+    for attempt in range(2):  # one retry: a mother mid-conversation shouldn't hit a one-off glitch
+        try:
+            resp = await _generate(contents, config)
+            return _parse_json(resp.text or "")
+        except (ValueError, LLMError) as exc:
+            last = LLMError(f"Gemini returned invalid JSON: {exc}")
+        except Exception as exc:  # noqa: BLE001
+            last = LLMError(f"Gemini request failed: {exc}")
+        log.warning("Gemini chat attempt %d failed: %s", attempt + 1, last)
+        await asyncio.sleep(0.6)
+    raise last  # type: ignore[misc]
 
 
 async def complete_json(prompt: str, *, temperature: float = 0.2) -> dict[str, Any]:
