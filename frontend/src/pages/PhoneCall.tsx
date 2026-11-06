@@ -97,12 +97,13 @@ export function PhoneCallPage() {
               </div>
               <p className="mt-1 text-sm text-muted">
                 {call.status === "ringing" && "Ringing her phone…"}
-                {call.status === "in_progress" && `MomCheck is talking with her in ${languageName(call.language)} · ${formatDuration(elapsed)}`}
+                {call.status === "in_progress" &&
+                  `${call.channel === "phone" ? "MomCheck is talking with her" : "She is talking to MomCheck on her phone"} in ${languageName(call.language)} · ${formatDuration(elapsed)}`}
                 {reviewing && "Call ended. Reviewing the conversation…"}
                 {!live && !reviewing && (call.summary ?? "Call ended.")}
               </p>
             </div>
-            {live && (
+            {live && call.channel === "phone" && (
               <Button variant="danger" onClick={() => void hangUp()} loading={hangingUp} icon={<PhoneOff className="size-4" />}>
                 Hang up
               </Button>

@@ -14,7 +14,8 @@ export function isLive(call: Pick<Call, "status">): boolean {
 /** Where a live call is shown: the in-browser call screen, or the phone-call monitor. */
 export function liveCallPath(call: Pick<Call, "id" | "channel">): string {
   if (call.channel === "interpreter") return `/interpret/${call.id}`;
-  return call.channel === "phone" ? `/phone-call/${call.id}` : `/call/${call.id}`;
+  // Her real phone, or her own MomCheck page: the ASHA watches it live
+  return call.channel === "phone" || call.channel === "ask" || call.channel === "checkin" ? `/phone-call/${call.id}` : `/call/${call.id}`;
 }
 
 /** Compact row used on the dashboard. */

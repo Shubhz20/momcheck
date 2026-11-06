@@ -301,6 +301,7 @@ def reset_demo_account(asha: Asha = Depends(current_asha), session: Session = De
 def dashboard(asha: Asha = Depends(current_asha), session: Session = Depends(get_session)) -> dict[str, Any]:
     women = _names(session, asha)
     ids = list(women)
+    calls.close_stale(session, ids)
     since = _start_of_today_utc()
     todays = session.exec(select(Call).where(Call.triggered_at >= since, Call.beneficiary_id.in_(ids))).all()
     open_alerts = session.exec(

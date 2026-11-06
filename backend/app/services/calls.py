@@ -19,6 +19,7 @@ import json
 import logging
 import time
 from collections import OrderedDict
+from datetime import timedelta
 from typing import Any
 
 from sqlmodel import Session, select
@@ -226,7 +227,14 @@ async def start_call(session: Session, b: Beneficiary, phone_line: bool = True, 
     session.add(call)
     session.commit()
     session.refresh(call)
-    audio, tts_ms, cloned = await speak(greeting, b.language, phone_line, voice)
+    try:
+        audio, tts_ms, cloned = await speak(greeting, b.language, phone_line, voice)
+    except Exception:
+        call.status, call.outcome, call.completed_at = "abandoned", "NOT_REACHABLE", utcnow()
+        call.summary = "The conversation couldn't start (speech service unavailable)."
+        session.add(call)
+        session.commit()
+        raise
     if voice and not cloned:
         call.own_voice = False
         session.add(call)
@@ -504,3 +512,28 @@ async def end_call(session: Session, call: Call) -> Call:
     session.commit()
     session.refresh(call)
     return call
+
+
+STALE_MINUTES = 15
+
+
+def close_stale(session: Session, ids: list[int]) -> None:
+    """Conversations she started from her link but left without ending (closed the page, lost signal).
+
+    No review is run here (it would slow the dashboard); danger signs were already alerted turn by turn.
+    """
+    cutoff = utcnow() - timedelta(minutes=STALE_MINUTES)
+    stale = session.exec(
+        select(Call).where(
+            Call.beneficiary_id.in_(ids), Call.status == "in_progress", Call.channel.in_(["ask", "checkin"]), Call.triggered_at < cutoff
+        )
+    ).all()
+    for c in stale:
+        spoke = any(t["role"] == "user" for t in c.transcript or [])
+        c.status = "completed" if spoke else "abandoned"
+        c.outcome = "DANGER_SIGN" if c.danger_signs else ("ROUTINE" if spoke else "NOT_REACHABLE")
+        c.summary = c.summary or ("She left the conversation before it finished." if spoke else "She opened MomCheck but didn't speak.")
+        c.completed_at = utcnow()
+        session.add(c)
+    if stale:
+        session.commit()

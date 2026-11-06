@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AlertTriangle, BellRing, CalendarClock, Database, Languages, PhoneCall, Users } from "lucide-react";
 import { api } from "../api/client";
@@ -15,7 +15,7 @@ import { Avatar, Button, Card, EmptyState, ErrorBox, PageHeader, SectionHeader, 
 import { useAsync } from "../hooks/useAsync";
 import { useMe } from "../hooks/useAuth";
 import { useLanguages } from "../hooks/useLanguages";
-import { dueLabel, formatDate, stageLabel } from "../lib/format";
+import { dueLabel, formatDate, parseTimestamp, stageLabel } from "../lib/format";
 
 function StatCard({ label, value, sub, icon, tone = "brand" }: { label: string; value: ReactNode; sub?: string; icon: ReactNode; tone?: "brand" | "rose" | "red" | "amber" }) {
   const t = {
@@ -73,6 +73,35 @@ export function DashboardPage() {
   const { refresh: refreshLanguages } = useLanguages();
   const { data, error, loading, reload, setData } = useAsync<DashboardData>(() => api.dashboard(), []);
   const [seeding, setSeeding] = useState(false);
+
+  // Keep the dashboard live: new conversations and alerts appear without a refresh
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      if (document.visibilityState === "visible") void reload(true);
+    }, 8000);
+    return () => window.clearInterval(t);
+  }, [reload]);
+
+  // Announce an alert that arrived while she was looking at the dashboard
+  const seenAlerts = useRef<Set<number> | null>(null);
+  useEffect(() => {
+    if (!data) return;
+    const ids = new Set(data.alerts.map((a) => a.id));
+    if (seenAlerts.current) {
+      for (const a of data.alerts)
+        if (!seenAlerts.current.has(a.id))
+          toast.error(`${a.level === "red" ? "RED" : "AMBER"} alert: ${a.beneficiary_name}, ${a.danger_signs[0] ?? a.reason}`);
+    }
+    seenAlerts.current = ids;
+  }, [data, toast]);
+
+  const liveNow =
+    data?.recent_calls.filter(
+      (c) =>
+        c.status === "in_progress" &&
+        (c.channel === "ask" || c.channel === "checkin") &&
+        Date.now() - parseTimestamp(c.triggered_at).getTime() < 15 * 60_000,
+    ) ?? [];
 
   const seed = async () => {
     setSeeding(true);
@@ -176,6 +205,22 @@ export function DashboardPage() {
           tone={data.open_alerts ? "red" : "brand"}
         />
       </div>
+
+      {liveNow.map((c) => (
+        <Link
+          key={c.id}
+          to={`/phone-call/${c.id}`}
+          className="slide-down mt-6 flex items-center gap-3 rounded-2xl bg-brand-700 px-4 py-3 text-white shadow-lg hover:bg-brand-800"
+        >
+          <span className="ring-pulse flex size-9 items-center justify-center rounded-full bg-white/15">
+            <PhoneCall className="size-4" />
+          </span>
+          <span className="min-w-0 flex-1 text-sm">
+            <b>{c.beneficiary_name}</b> is talking to MomCheck on her phone right now
+          </span>
+          <span className="text-sm font-semibold">Watch live →</span>
+        </Link>
+      ))}
 
       {data.alerts.length > 0 && (
         <section className="mt-8">

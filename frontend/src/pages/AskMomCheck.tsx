@@ -41,6 +41,14 @@ export function AskMomCheckPage() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [lines, phase]);
 
+  // If she closes the page mid-conversation, end it so her ASHA doesn't see it as still going
+  useEffect(() => {
+    if (callId == null || phase === "ended" || phase === "idle") return;
+    const leave = () => navigator.sendBeacon?.(`/api/ask/${token}/calls/${callId}/end`);
+    window.addEventListener("pagehide", leave);
+    return () => window.removeEventListener("pagehide", leave);
+  }, [callId, phase, token]);
+
   const say = async (audio: string) => {
     setPhase("speaking");
     await playClip(audio).catch(() => undefined);

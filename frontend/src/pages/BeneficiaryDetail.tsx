@@ -202,7 +202,11 @@ export function BeneficiaryDetailPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-medium text-ink">
-                  {activeCall.status === "ringing" ? "Her phone is ringing" : "A follow-up call is in progress"}
+                  {activeCall.status === "ringing"
+                    ? "Her phone is ringing"
+                    : activeCall.channel === "ask" || activeCall.channel === "checkin"
+                      ? "She is talking to MomCheck on her phone right now"
+                      : "A follow-up call is in progress"}
                 </p>
                 <p className="text-sm text-muted">Started {timeAgo(activeCall.triggered_at)}.</p>
               </div>
@@ -210,7 +214,7 @@ export function BeneficiaryDetailPage() {
                 to={liveCallPath(activeCall)}
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-800"
               >
-                <PhoneCall className="size-4" /> Return to call
+                <PhoneCall className="size-4" /> {activeCall.channel === "ask" || activeCall.channel === "checkin" ? "Watch live" : "Return to call"}
               </Link>
             </div>
           ) : (
