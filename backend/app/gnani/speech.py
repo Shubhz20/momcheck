@@ -70,13 +70,16 @@ async def transcribe(
         if topic:
             data["topic"] = topic[:1600]
     started = time.perf_counter()
-    async with httpx.AsyncClient(timeout=60) as client:
-        resp = await client.post(
-            f"{s.speech_base_url}/stt/v3",
-            headers=_headers(),
-            data=data,
-            files={"audio_file": (filename, audio)},
-        )
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.post(
+                f"{s.speech_base_url}/stt/v3",
+                headers=_headers(),
+                data=data,
+                files={"audio_file": (filename, audio)},
+            )
+    except httpx.HTTPError as exc:
+        raise SpeechError(f"STT request failed: {type(exc).__name__}: {exc}") from exc
     if resp.status_code != 200:
         raise SpeechError(f"STT failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
     body = resp.json()
@@ -112,10 +115,13 @@ async def synthesize(
     }
     started = time.perf_counter()
     async with _tts_lock:
-        async with httpx.AsyncClient(timeout=120) as client:
-            resp = await client.post(
-                f"{s.speech_base_url}/api/v1/tts/inference", headers=_headers(), json=payload
-            )
+        try:
+            async with httpx.AsyncClient(timeout=120) as client:
+                resp = await client.post(
+                    f"{s.speech_base_url}/api/v1/tts/inference", headers=_headers(), json=payload
+                )
+        except httpx.HTTPError as exc:
+            raise SpeechError(f"TTS request failed: {type(exc).__name__}: {exc}") from exc
     if resp.status_code != 200:
         raise SpeechError(f"TTS failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
     log.info("TTS %s %d chars %.2fs", language, len(text), time.perf_counter() - started)

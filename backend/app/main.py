@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import date, timedelta
 from typing import Any, Optional
 
@@ -118,8 +119,9 @@ def _call_json(session: Session, c: Call) -> dict[str, Any]:
 # Routes
 # ---------------------------------------------------------------------------
 @app.get("/api/health")
-def health() -> dict[str, bool]:
-    return {"ok": True}
+def health() -> dict[str, Any]:
+    # Render sets RENDER_GIT_COMMIT, so this shows which commit is live.
+    return {"ok": True, "commit": os.getenv("RENDER_GIT_COMMIT", "local")[:7]}
 
 
 @app.get("/api/languages")

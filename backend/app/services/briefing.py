@@ -113,6 +113,8 @@ def _chunks(text: str, limit: int = 280) -> list[str]:
 
 
 def _concat_wavs(parts: list[bytes]) -> bytes:
+    """Join WAV clips. Gnani TTS WAVs carry a streaming header (nframes = 2**31 - 1), so the frame
+    count is never copied: readframes reads to the end of each clip and the writer fills in the real size."""
     buf = io.BytesIO()
     params = None
     frames: list[bytes] = []
@@ -121,7 +123,7 @@ def _concat_wavs(parts: list[bytes]) -> bytes:
             params = params or w.getparams()
             frames.append(w.readframes(w.getnframes()))
     with wave.open(buf, "wb") as out:
-        out.setparams(params)
+        out.setparams(params._replace(nframes=0))
         for f in frames:
             out.writeframes(f)
     return buf.getvalue()

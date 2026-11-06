@@ -104,7 +104,7 @@ interface Dashboard {
 
 | Method | Path | Body / query | Returns |
 |---|---|---|---|
-| GET | `/api/health` | | `{ ok: true }` |
+| GET | `/api/health` | | `{ ok: true; commit: string }`: `commit` is the deployed git commit (`local` in development) |
 | GET | `/api/dashboard` | | `Dashboard` |
 | GET | `/api/languages` | | `Language[]` |
 | GET | `/api/beneficiaries` | `?q=&language=&category=` | `Beneficiary[]` |
