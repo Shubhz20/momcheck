@@ -17,10 +17,18 @@ When the call ends, the ASHA sees an English summary, the outcome and the full t
 
 ## How it works
 
+**Who uses what.** The dashboard is for the ASHA worker. Each ASHA has her own account and sees only the women she looks after. Mothers never see the dashboard: MomCheck **rings their phone** (any phone, including a basic feature phone) and talks with them.
+
+**Two ways to place a call**
+- **Call her phone**: a real phone call through Twilio. Twilio streams the call audio (8 kHz) to our server over a WebSocket, and MomCheck's replies are streamed back into the call. The ASHA watches the conversation live on her dashboard and can hang up. (Twilio's free trial can only ring numbers verified on the account, so this is enabled for private accounts.)
+- **Browser call**: the same conversation in the browser, where you speak as the mother. Anyone can try this in the demo accounts, at no cost. A phone-line mode squeezes the microphone audio to 8 kHz with background noise to imitate a real call.
+
+**Try it:** open the app and pick a demo ASHA: **Meena Kumari**, a rural ASHA in Barabanki (UP) whose women speak Hindi, or **Savita Jadhav**, an urban ASHA in Pune whose ward has migrant families speaking nine different languages.
+
 MomCheck's voice conversation is our own agent loop, built on Gnani AI's speech models:
 
 ```
- her voice ──▶ [Phone-line simulation: 8 kHz, noise] ──▶ Gnani Prisma STT (prisma-v3.0, her language + English)
+ her voice ──▶ [her phone via Twilio, 8 kHz | browser + phone-line sim] ──▶ Gnani Prisma STT (prisma-v3.0, her language + English)
                                                                 │ text
                                                                 ▼
                     Gemini: decides the next question, spots danger signs ──▶ alert to ASHA (live)
@@ -32,7 +40,7 @@ MomCheck's voice conversation is our own agent loop, built on Gnani AI's speech 
 | Gnani AI technology | Used for |
 |---|---|
 | **Prisma STT** (REST, `prisma-v3.0`) | Every turn of the conversation; a language pair (her language plus English) handles code-mixed speech like Hinglish and Tanglish; key terms (her name, village, "PHC") improve accuracy; also used for the ASHA's voice notes |
-| **Timbre TTS** (REST, `timbre-v3.0`, voice *Chetana*) | MomCheck's spoken replies in all 10 languages, plus the ASHA's daily briefing |
+| **Timbre TTS** (REST, `timbre-v3.0`, voice *Chetana*) | MomCheck's spoken replies in all 10 languages (8 kHz mu-law straight into phone calls), plus the ASHA's daily briefing |
 
 **Gemini** (Google) does the reasoning: the conversation, the end-of-call review, extracting fields from voice notes, and writing the briefing.
 
@@ -57,16 +65,19 @@ cd backend && ../.venv/bin/uvicorn app.main:app --reload --port 8000
 cd frontend && npm install && npm run dev
 ```
 
-Open http://localhost:5173, click **Load demo data**, open any woman's profile and start a follow-up call.
+Open http://localhost:5173, choose a demo ASHA account, open any woman's profile and start a follow-up call. Real phone calls need the Twilio keys in `.env` and a public https deployment, because Twilio has to reach the app.
 
 ## Deploy (free)
 
-The `Dockerfile` builds the dashboard and serves it from the API, so the whole app runs as one service. `render.yaml` deploys it to Render's free tier. Use a free Neon Postgres database for `DATABASE_URL`.
+The `Dockerfile` builds the dashboard and serves it from the API, so the whole app runs as one service. `render.yaml` deploys it to Render's free tier. Use a free Neon Postgres database for `DATABASE_URL`. For phone calls, add `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_FROM_NUMBER` in the Render dashboard.
 
 ## Project layout
 
 ```
 backend/app/        FastAPI app
+  auth.py           ASHA accounts: PIN sign-in, session cookie
+  telephony.py      real phone calls: Twilio dialling, media-stream WebSocket, end-of-speech detection
+  seed.py           demo ASHA accounts and their women
   gnani/speech.py   Gnani Prisma STT + Timbre TTS client
   services/calls.py the voice agent loop (STT -> Gemini -> TTS), alerts, call review
   services/notes.py ASHA voice notes

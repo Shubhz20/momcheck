@@ -2,6 +2,20 @@
 
 All routes are under `/api` and use JSON unless noted. Dates are `YYYY-MM-DD`; timestamps are ISO 8601 UTC.
 
+## Accounts
+
+Each ASHA worker has an account and sees only her own women, calls, alerts and notes. Every route below except
+`/api/health`, `/api/languages`, `/api/auth/*` (other than `me` and `reset-demo`) and the Twilio callbacks needs the
+`mc_session` cookie set by a sign-in route, and returns `401` without it. Records of another ASHA return `404`.
+Two **demo accounts** (no PIN, synthetic data) are created on startup: Meena Kumari (rural Barabanki, Hindi) and
+Savita Jadhav (urban Pune ward, nine languages).
+
+```ts
+interface Me { id: number; name: string; phone: string; area: string; language: LanguageCode;
+  is_demo: boolean; phone_calls: boolean }   // phone_calls: real phone calls are available to this account
+interface DemoAccount { id: number; name: string; area: string; language: LanguageCode; women: number; languages: LanguageCode[] }
+```
+
 ## Types
 
 ```ts
@@ -38,7 +52,8 @@ interface Call {
   beneficiary_id: number;
   beneficiary_name: string;
   language: LanguageCode;
-  status: "in_progress" | "completed" | "abandoned";
+  status: "ringing" | "in_progress" | "completed" | "abandoned" | "not_answered" | "failed"; // ringing/not_answered/failed: phone calls only
+  channel: "browser" | "phone";      // phone = her real phone rang (Twilio)
   outcome: "DANGER_SIGN" | "ROUTINE" | "CALLBACK" | "NOT_REACHABLE" | null;
   danger_signs: string[];      // English labels, e.g. "Sudden swelling of face, hands or feet"
   summary: string | null;      // English, 1-3 sentences (set when the call ends)
@@ -104,7 +119,14 @@ interface Dashboard {
 
 | Method | Path | Body / query | Returns |
 |---|---|---|---|
-| GET | `/api/health` | | `{ ok: true; commit: string }`: `commit` is the deployed git commit (`local` in development) |
+| GET | `/api/health` | | `{ ok: true; commit: string; phone_calls: boolean }`: `commit` is the deployed git commit (`local` in development); `phone_calls` is true when Twilio is configured |
+| GET | `/api/auth/demo-accounts` | | `DemoAccount[]` |
+| POST | `/api/auth/demo` | `{ asha_id }` | `Me` (signs in to a demo account) |
+| POST | `/api/auth/login` | `{ phone, pin }` | `Me`. `401` wrong phone/PIN, `429` after 5 wrong PINs (10 min) |
+| POST | `/api/auth/signup` | `{ name, phone, area, language, pin }` (PIN 4–6 digits) | `Me`. `409` if the phone already has an account |
+| POST | `/api/auth/logout` | | `{ ok: true }` |
+| GET | `/api/auth/me` | | `Me` |
+| POST | `/api/auth/reset-demo` | | `{ created: number }`: demo accounts only; restores the starting data |
 | GET | `/api/dashboard` | | `Dashboard` |
 | GET | `/api/languages` | | `Language[]` |
 | GET | `/api/beneficiaries` | `?q=&language=&category=` | `Beneficiary[]` |
@@ -113,7 +135,9 @@ interface Dashboard {
 | PATCH | `/api/beneficiaries/{id}` | any POST field | `Beneficiary` |
 | DELETE | `/api/beneficiaries/{id}` | | `{ ok: true }` |
 | POST | `/api/beneficiaries/{id}/call` | | `{ call: Call; reply: TurnReply }`: starts a voice call, `reply` is MomCheck's spoken greeting |
-| GET | `/api/calls/{id}` | | `Call` |
+| POST | `/api/beneficiaries/{id}/phone-call` | | `Call` (status `ringing`, channel `phone`): rings her real phone through Twilio. `403` for demo accounts, `503` if Twilio isn't configured, `502` with a readable reason if Twilio refuses (e.g. number not verified on a trial account) |
+| POST | `/api/calls/{id}/hangup` | | `Call`: ends a ringing or live phone call |
+| GET | `/api/calls/{id}` | | `Call` (poll it to follow a live phone call; the transcript grows turn by turn) |
 | POST | `/api/calls/{id}/turn` | multipart: `audio` (WAV mono, 8 or 16 kHz, ≤ 30 s), `phone_line` (`"true"`/`"false"`) | `TurnReply` |
 | POST | `/api/calls/{id}/end` | | `Call` (analysed: outcome, danger signs, summary; alerts created) |
 | GET | `/api/calls` | `?beneficiary_id=&limit=` | `Call[]` |
@@ -123,6 +147,8 @@ interface Dashboard {
 | POST | `/api/notes` | `NoteDraft` | `Note` |
 | GET | `/api/briefing` | `?language=hi-IN` | `{ text: string; language: LanguageCode }` |
 | GET | `/api/briefing/audio` | `?language=hi-IN` | `audio/wav` |
-| POST | `/api/demo/seed` | | `{ created: number }`: adds sample beneficiaries if none exist |
+| POST | `/api/demo/seed` | | `{ created: number }`: adds sample women to the signed-in account if it has none |
+| POST | `/api/twilio/status/{call_id}?token=` | Twilio status callback (form) | `204`. Marks unanswered / busy / failed calls |
+| WS | `/api/twilio/stream` | Twilio Media Stream (bidirectional, 8 kHz mu-law) | The live phone conversation; the `start` message must carry the call's `call_id` and `token` |
 
 Errors are returned as `{ "detail": "human readable message" }` with a 4xx or 5xx status.

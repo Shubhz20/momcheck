@@ -1,8 +1,11 @@
+import { useState, type ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Mic, Sunrise, Users } from "lucide-react";
-import type { ReactNode } from "react";
+import { LayoutDashboard, LogOut, Mic, RotateCcw, Sunrise, Users } from "lucide-react";
+import { api } from "../api/client";
+import { useAuth, useMe } from "../hooks/useAuth";
 import { Logo, LogoMark } from "./Logo";
-import { cx } from "./ui";
+import { useToast } from "./Toast";
+import { Avatar, Button, cx } from "./ui";
 
 const NAV: { to: string; label: string; short: string; icon: ReactNode; end?: boolean }[] = [
   { to: "/", label: "Dashboard", short: "Home", icon: <LayoutDashboard className="size-5" />, end: true },
@@ -21,7 +24,56 @@ function PoweredBy({ className }: { className?: string }) {
   );
 }
 
+function AccountBox() {
+  const me = useMe();
+  const { signOut } = useAuth();
+  return (
+    <div className="mt-6 rounded-xl border border-line bg-white p-3">
+      <div className="flex items-center gap-2.5">
+        <Avatar name={me.name} tone="rose" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-ink">{me.name}</p>
+          <p className="truncate text-xs text-muted">{me.is_demo ? "Demo ASHA account" : "ASHA worker"} · {me.area}</p>
+        </div>
+      </div>
+      <Button variant="secondary" size="sm" onClick={() => void signOut()} icon={<LogOut className="size-4" />} className="mt-3 w-full">
+        {me.is_demo ? "Switch account" : "Sign out"}
+      </Button>
+    </div>
+  );
+}
+
+function DemoBanner() {
+  const me = useMe();
+  const toast = useToast();
+  const [resetting, setResetting] = useState(false);
+  if (!me.is_demo) return null;
+  const reset = async () => {
+    if (!window.confirm("Reset this demo account? Calls, alerts and notes made on it will be removed.")) return;
+    setResetting(true);
+    try {
+      await api.resetDemo();
+      window.location.assign("/");
+    } catch (e) {
+      toast.error((e as Error).message);
+      setResetting(false);
+    }
+  };
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl bg-amber-50 px-3.5 py-2.5 text-sm text-amber-900 ring-1 ring-inset ring-amber-200">
+      <p className="min-w-0 flex-1">
+        You're using <span className="font-medium">{me.name}</span>'s demo account. Names and numbers are made up, and other visitors may use it
+        too.
+      </p>
+      <Button variant="secondary" size="sm" onClick={() => void reset()} loading={resetting} icon={<RotateCcw className="size-4" />}>
+        Reset demo data
+      </Button>
+    </div>
+  );
+}
+
 export function Layout() {
+  const { signOut } = useAuth();
   return (
     <div className="min-h-screen md:flex">
       {/* Desktop sidebar */}
@@ -45,6 +97,7 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
+        <AccountBox />
         <div className="mt-auto rounded-xl bg-blush-50 p-3">
           <p className="text-xs leading-relaxed text-blush-600">
             Screening and reminders only. MomCheck never diagnoses. Every danger sign goes to a health worker.
@@ -60,10 +113,19 @@ export function Layout() {
           <div className="text-[15px] font-semibold text-ink">MomCheck</div>
           <div className="text-[10.5px] text-muted">Maternal follow-up calls, in every Indian language</div>
         </div>
+        <button
+          onClick={() => void signOut()}
+          className="ml-auto rounded-lg p-2 text-muted hover:bg-stone-100 hover:text-ink"
+          aria-label="Sign out"
+          title="Sign out"
+        >
+          <LogOut className="size-5" />
+        </button>
       </header>
 
       <main className="min-w-0 flex-1">
         <div className="mx-auto max-w-6xl px-4 pb-28 pt-5 md:px-8 md:pb-12 md:pt-8">
+          <DemoBanner />
           <Outlet />
           <PoweredBy className="mt-12 text-center md:hidden" />
         </div>

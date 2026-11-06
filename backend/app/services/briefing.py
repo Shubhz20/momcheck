@@ -12,15 +12,14 @@ from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select
 
 from .. import llm, prompts
-from ..config import get_settings
 from ..gnani import speech
 from ..languages import language_name
-from ..models import Alert, Beneficiary, Call
+from ..models import Alert, Asha, Beneficiary, Call
 from .serialize import IST, today
 
 log = logging.getLogger("briefing")
 
-_cache: dict[str, tuple[float, str]] = {}
+_cache: dict[tuple[int, str], tuple[float, str]] = {}
 _CACHE_SECONDS = 180
 
 
@@ -29,16 +28,19 @@ def _start_of_today_utc() -> datetime:
     return start_ist.astimezone(timezone.utc).replace(tzinfo=None)
 
 
-def briefing_data(session: Session) -> dict:
+def briefing_data(session: Session, asha: Asha) -> dict:
+    women = {b.id: b for b in session.exec(select(Beneficiary).where(Beneficiary.asha_id == asha.id)).all()}
+    ids = list(women)
     since = _start_of_today_utc()
-    calls = session.exec(select(Call).where(Call.triggered_at >= since)).all()
-    alerts = session.exec(select(Alert).where(Alert.status == "open").order_by(Alert.created_at.desc())).all()
-    horizon = today() + timedelta(days=3)
-    due = session.exec(
-        select(Beneficiary).where(Beneficiary.next_visit_date != None, Beneficiary.next_visit_date <= horizon)  # noqa: E711
-        .order_by(Beneficiary.next_visit_date)
+    calls = session.exec(select(Call).where(Call.triggered_at >= since, Call.beneficiary_id.in_(ids))).all()
+    alerts = session.exec(
+        select(Alert).where(Alert.status == "open", Alert.beneficiary_id.in_(ids)).order_by(Alert.created_at.desc())
     ).all()
-    women = {b.id: b for b in session.exec(select(Beneficiary)).all()}
+    horizon = today() + timedelta(days=3)
+    due = sorted(
+        (b for b in women.values() if b.next_visit_date and b.next_visit_date <= horizon),
+        key=lambda b: b.next_visit_date,
+    )
     return {
         "date": today().isoformat(),
         "calls_today": len(calls),
@@ -72,16 +74,21 @@ def _fallback_text(data: dict) -> str:
     return " ".join(parts)
 
 
-async def briefing_text(session: Session, language: str) -> tuple[str, str]:
+def clear_cache(asha_id: int) -> None:
+    for key in [k for k in _cache if k[0] == asha_id]:
+        _cache.pop(key, None)
+
+
+async def briefing_text(session: Session, asha: Asha, language: str) -> tuple[str, str]:
     """Returns (text, language actually used)."""
-    cached = _cache.get(language)
+    cached = _cache.get((asha.id, language))
     if cached and time.time() - cached[0] < _CACHE_SECONDS:
         return cached[1], language
-    data = briefing_data(session)
+    data = briefing_data(session, asha)
     try:
         result = await llm.complete_json(
             prompts.BRIEFING_PROMPT.format(
-                asha_name=get_settings().asha_name,
+                asha_name=asha.name,
                 language_name=language_name(language),
                 data=json.dumps(data, ensure_ascii=False),
             ),
@@ -93,7 +100,7 @@ async def briefing_text(session: Session, language: str) -> tuple[str, str]:
     except llm.LLMError as exc:
         log.warning("Briefing LLM failed, using English template: %s", exc)
         text, language = _fallback_text(data), "en-IN"
-    _cache[language] = (time.time(), text)
+    _cache[(asha.id, language)] = (time.time(), text)
     return text, language
 
 
@@ -129,7 +136,7 @@ def _concat_wavs(parts: list[bytes]) -> bytes:
     return buf.getvalue()
 
 
-async def briefing_audio(session: Session, language: str) -> bytes:
-    text, used_language = await briefing_text(session, language)
+async def briefing_audio(session: Session, asha: Asha, language: str) -> bytes:
+    text, used_language = await briefing_text(session, asha, language)
     parts = [await speech.synthesize(chunk, used_language) for chunk in _chunks(text)]
     return parts[0] if len(parts) == 1 else _concat_wavs(parts)

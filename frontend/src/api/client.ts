@@ -6,13 +6,18 @@ import type {
   Briefing,
   Call,
   Dashboard,
+  DemoAccount,
   Language,
   LanguageCode,
+  Me,
   Note,
   NoteDraft,
+  SignupInput,
   StartCallResponse,
   TurnReply,
 } from "./types";
+
+export const SIGNED_OUT_EVENT = "momcheck:signed-out";
 
 export class ApiError extends Error {
   status: number;
@@ -50,6 +55,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   } catch {
     throw new ApiError("Can't reach the server. Check your internet connection.", 0);
   }
+  // Session expired or signed out elsewhere: tell the app to show the sign-in page.
+  if (res.status === 401 && !path.startsWith("/auth/")) window.dispatchEvent(new Event(SIGNED_OUT_EVENT));
   if (!res.ok) throw await parseError(res);
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -64,6 +71,15 @@ function qs(params: Record<string, string | number | undefined | null>): string 
 
 export const api = {
   health: () => request<{ ok: boolean }>("GET", "/health"),
+
+  me: () => request<Me>("GET", "/auth/me"),
+  demoAccounts: () => request<DemoAccount[]>("GET", "/auth/demo-accounts"),
+  demoLogin: (ashaId: number) => request<Me>("POST", "/auth/demo", { asha_id: ashaId }),
+  login: (phone: string, pin: string) => request<Me>("POST", "/auth/login", { phone, pin }),
+  signup: (input: SignupInput) => request<Me>("POST", "/auth/signup", input),
+  logout: () => request<{ ok: boolean }>("POST", "/auth/logout"),
+  resetDemo: () => request<{ created: number }>("POST", "/auth/reset-demo"),
+
   dashboard: () => request<Dashboard>("GET", "/dashboard"),
   languages: () => request<Language[]>("GET", "/languages"),
 
@@ -85,6 +101,8 @@ export const api = {
     return request<TurnReply>("POST", `/calls/${id}/turn`, fd);
   },
   endCall: (id: number) => request<Call>("POST", `/calls/${id}/end`),
+  startPhoneCall: (beneficiaryId: number) => request<Call>("POST", `/beneficiaries/${beneficiaryId}/phone-call`),
+  hangupCall: (id: number) => request<Call>("POST", `/calls/${id}/hangup`),
 
   alerts: (status?: "open" | "acknowledged") => request<Alert[]>("GET", `/alerts${qs({ status })}`),
   ackAlert: (id: number) => request<Alert>("POST", `/alerts/${id}/ack`),

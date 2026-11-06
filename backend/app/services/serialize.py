@@ -45,6 +45,7 @@ def call_out(c: Call, beneficiary_name: str) -> dict[str, Any]:
         "beneficiary_name": beneficiary_name,
         "language": c.language,
         "status": c.status,
+        "channel": c.channel or "browser",
         "outcome": c.outcome,
         "danger_signs": c.danger_signs or [],
         "summary": c.summary,

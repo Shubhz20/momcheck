@@ -3,12 +3,14 @@ import { Sunrise, Volume2 } from "lucide-react";
 import { api } from "../api/client";
 import type { Briefing, LanguageCode } from "../api/types";
 import { Button, Card, ErrorBox, Field, PageHeader, Skeleton, inputClass } from "../components/ui";
+import { useMe } from "../hooks/useAuth";
 import { useLanguages } from "../hooks/useLanguages";
 import { loadPref, savePref } from "../lib/prefs";
 
 export function BriefingPage() {
   const { languages } = useLanguages();
-  const [language, setLanguage] = useState<LanguageCode>(() => loadPref<LanguageCode>("js.briefingLang", "hi-IN"));
+  const me = useMe();
+  const [language, setLanguage] = useState<LanguageCode>(() => loadPref<LanguageCode>(`js.briefingLang.${me.id}`, me.language));
   const [briefing, setBriefing] = useState<Briefing | null>(null);
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -20,7 +22,7 @@ export function BriefingPage() {
     setError(null);
     setAudioError(false);
     setAudioSrc(null);
-    savePref("js.briefingLang", language);
+    savePref(`js.briefingLang.${me.id}`, language);
     try {
       const b = await api.briefing(language);
       setBriefing(b);

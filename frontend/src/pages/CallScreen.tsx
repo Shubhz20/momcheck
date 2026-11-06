@@ -8,7 +8,7 @@ import { AutoplayBlockedError, playClip, stopClip, unlockAudio } from "../audio/
 import { MicCapture, MicError } from "../audio/recorder";
 import { UtteranceDetector } from "../audio/vad";
 import { toCleanWav16k } from "../audio/wav";
-import { DangerChips, OutcomeBadge, PhoneLineBadge } from "../components/badges";
+import { ChannelBadge, DangerChips, OutcomeBadge } from "../components/badges";
 import { Spinner, cx } from "../components/ui";
 import { formatDuration, languageLabel, parseTimestamp } from "../lib/format";
 import { loadPref, savePref } from "../lib/prefs";
@@ -697,7 +697,7 @@ function ResultCard({ call, error, onRetry }: { call: Call | null; error: string
     <div className={cx("slide-down mx-4 mt-4 rounded-2xl bg-white p-5 text-ink shadow-xl", danger && "ring-2 ring-red-400")}>
       <div className="flex flex-wrap items-center gap-2">
         <OutcomeBadge call={call} />
-        {call.phone_line && <PhoneLineBadge />}
+        <ChannelBadge call={call} />
         {call.duration_sec != null && <span className="text-xs text-muted">{formatDuration(call.duration_sec)}</span>}
       </div>
       {danger && (

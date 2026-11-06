@@ -9,14 +9,14 @@ from sqlmodel import Session, select
 
 from .. import llm, prompts
 from ..gnani import speech
-from ..models import Beneficiary
+from ..models import Asha, Beneficiary
 from .serialize import today
 
 log = logging.getLogger("notes")
 
 
-async def draft_note(session: Session, audio: bytes, filename: str, language: str | None) -> dict[str, Any]:
-    women = session.exec(select(Beneficiary)).all()
+async def draft_note(session: Session, asha: Asha, audio: bytes, filename: str, language: str | None) -> dict[str, Any]:
+    women = session.exec(select(Beneficiary).where(Beneficiary.asha_id == asha.id)).all()
     stt = await speech.transcribe(
         audio,
         filename=filename or "note.wav",

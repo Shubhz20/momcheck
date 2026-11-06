@@ -13,6 +13,13 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
+      # Real phone calls (optional). The app's public URL comes from RENDER_EXTERNAL_URL, which Render sets.
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM_NUMBER
+        sync: false
       - key: GEMINI_MODEL
         value: gemini-3.5-flash-lite
       - key: GEMINI_FALLBACK_MODELS

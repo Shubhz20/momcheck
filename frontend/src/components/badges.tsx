@@ -1,8 +1,26 @@
-import { AlertTriangle, CheckCircle2, PhoneMissed, PhoneOutgoing, Radio, RotateCcw, XCircle } from "lucide-react";
+import { AlertTriangle, BellRing, CheckCircle2, Phone, PhoneMissed, PhoneOutgoing, Radio, RotateCcw, XCircle } from "lucide-react";
 import type { Call, CallOutcome, Risk } from "../api/types";
 import { Badge } from "./ui";
 
 export function OutcomeBadge({ call }: { call: Pick<Call, "status" | "outcome"> }) {
+  if (call.status === "ringing")
+    return (
+      <Badge tone="blue" icon={<BellRing className="size-3" />}>
+        Ringing
+      </Badge>
+    );
+  if (call.status === "failed")
+    return (
+      <Badge tone="neutral" icon={<XCircle className="size-3" />}>
+        Couldn't connect
+      </Badge>
+    );
+  if (call.status === "not_answered")
+    return (
+      <Badge tone="neutral" icon={<PhoneMissed className="size-3" />}>
+        No answer
+      </Badge>
+    );
   if (call.status === "in_progress")
     return (
       <Badge tone="blue" icon={<PhoneOutgoing className="size-3" />}>
@@ -18,10 +36,18 @@ export function OutcomeBadge({ call }: { call: Pick<Call, "status" | "outcome"> 
   return <OutcomeOnly outcome={call.outcome} />;
 }
 
-export function PhoneLineBadge() {
+/** How the call happened: her real phone (Twilio), or a browser call with the simulated 8 kHz phone line. */
+export function ChannelBadge({ call }: { call: Pick<Call, "channel" | "phone_line"> }) {
+  if (call.channel === "phone")
+    return (
+      <Badge tone="brand" icon={<Phone className="size-3" />}>
+        Real phone call
+      </Badge>
+    );
+  if (!call.phone_line) return null;
   return (
     <Badge tone="neutral" icon={<Radio className="size-3" />}>
-      Phone line · 8 kHz
+      Browser · 8 kHz phone-line sim
     </Badge>
   );
 }

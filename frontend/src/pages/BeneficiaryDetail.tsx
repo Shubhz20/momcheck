@@ -1,16 +1,17 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, Languages, MapPin, Mic, NotebookPen, Pencil, Phone, PhoneCall, PhoneOutgoing, Trash2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, Languages, MapPin, Mic, MonitorSmartphone, NotebookPen, Pencil, Phone, PhoneCall, PhoneOutgoing, Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import type { Alert, BeneficiaryDetail, BeneficiaryInput } from "../api/types";
 import { unlockAudio } from "../audio/player";
 import { AlertCard } from "../components/AlertCard";
 import { BeneficiaryForm } from "../components/BeneficiaryForm";
-import { CallCard } from "../components/CallCard";
+import { CallCard, isLive, liveCallPath } from "../components/CallCard";
 import { RiskBadge } from "../components/badges";
 import { useToast } from "../components/Toast";
 import { Avatar, Badge, Button, Card, ErrorBox, SectionHeader, Skeleton, SkeletonList, cx } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import { useMe } from "../hooks/useAuth";
 import { useLanguages } from "../hooks/useLanguages";
 import { dueLabel, formatDate, formatDateTime, languageLabel, languageName, stageLabel, timeAgo } from "../lib/format";
 import { loadPref } from "../lib/prefs";
@@ -32,10 +33,12 @@ export function BeneficiaryDetailPage() {
   const id = Number(idParam);
   const navigate = useNavigate();
   const toast = useToast();
+  const me = useMe();
   const { languages } = useLanguages();
   const { data, error, loading, reload, setData } = useAsync<BeneficiaryDetail>(() => api.beneficiary(id), [id]);
 
   const [calling, setCalling] = useState(false);
+  const [dialing, setDialing] = useState(false);
   const [callError, setCallError] = useState<string | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
@@ -51,6 +54,19 @@ export function BeneficiaryDetailPage() {
     } catch (e) {
       setCallError((e as Error).message);
       setCalling(false);
+    }
+  };
+
+  const callPhone = async () => {
+    if (!data) return;
+    setDialing(true);
+    setCallError(null);
+    try {
+      const call = await api.startPhoneCall(data.id);
+      navigate(`/phone-call/${call.id}`);
+    } catch (e) {
+      setCallError((e as Error).message);
+      setDialing(false);
     }
   };
 
@@ -99,7 +115,7 @@ export function BeneficiaryDetailPage() {
   if (!data) return null;
 
   const due = dueLabel(data.next_visit_date);
-  const activeCall = data.calls.find((c) => c.status === "in_progress");
+  const activeCall = data.calls.find(isLive);
   const openAlerts = data.alerts.filter((a) => a.status === "open");
   const pastAlerts = data.alerts.filter((a) => a.status !== "open");
 
@@ -164,11 +180,13 @@ export function BeneficiaryDetailPage() {
                 <PhoneOutgoing className="size-5" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-ink">A follow-up call is in progress</p>
+                <p className="font-medium text-ink">
+                  {activeCall.status === "ringing" ? "Her phone is ringing" : "A follow-up call is in progress"}
+                </p>
                 <p className="text-sm text-muted">Started {timeAgo(activeCall.triggered_at)}.</p>
               </div>
               <Link
-                to={`/call/${activeCall.id}`}
+                to={liveCallPath(activeCall)}
                 className="inline-flex h-10 items-center gap-2 rounded-xl bg-brand-700 px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-800"
               >
                 <PhoneCall className="size-4" /> Return to call
@@ -176,12 +194,37 @@ export function BeneficiaryDetailPage() {
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-4">
-              <Button size="lg" onClick={startCall} loading={calling} icon={<PhoneCall className="size-5" />} className="w-full sm:w-auto">
-                {calling ? "Connecting…" : "Start follow-up call"}
-              </Button>
+              {me.phone_calls ? (
+                <div className="flex w-full flex-wrap gap-2 sm:w-auto">
+                  <Button size="lg" onClick={callPhone} loading={dialing} disabled={calling} icon={<PhoneCall className="size-5" />} className="w-full sm:w-auto">
+                    {dialing ? "Dialling…" : "Call her phone"}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    onClick={startCall}
+                    loading={calling}
+                    disabled={dialing}
+                    icon={<MonitorSmartphone className="size-5" />}
+                    className="w-full sm:w-auto"
+                  >
+                    Try in browser
+                  </Button>
+                </div>
+              ) : (
+                <Button size="lg" onClick={startCall} loading={calling} icon={<PhoneCall className="size-5" />} className="w-full sm:w-auto">
+                  {calling ? "Connecting…" : "Start follow-up call"}
+                </Button>
+              )}
               <p className="flex-1 text-sm text-muted">
                 MomCheck will speak with her in {languageName(data.language)}, remind her about her next visit, and check for danger signs. Any danger
                 sign alerts you straight away.
+                {me.is_demo && (
+                  <span className="mt-1 block text-ink">
+                    In this demo the call runs in your browser and you speak as {data.name.split(" ")[0]}. In a real account, MomCheck rings her
+                    phone.
+                  </span>
+                )}
               </p>
             </div>
           )}

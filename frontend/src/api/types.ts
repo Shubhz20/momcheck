@@ -19,6 +19,34 @@ export interface Language {
   enabled: boolean; // a call agent exists for this language
 }
 
+/** The signed-in ASHA worker. */
+export interface Me {
+  id: number;
+  name: string;
+  phone: string;
+  area: string;
+  language: LanguageCode;
+  is_demo: boolean;
+  phone_calls: boolean; // real phone calls (Twilio) are available to this account
+}
+
+export interface DemoAccount {
+  id: number;
+  name: string;
+  area: string;
+  language: LanguageCode;
+  women: number;
+  languages: LanguageCode[];
+}
+
+export interface SignupInput {
+  name: string;
+  phone: string;
+  area: string;
+  language: LanguageCode;
+  pin: string;
+}
+
 export type Category = "pregnant" | "postnatal";
 export type Risk = "normal" | "watch" | "high";
 
@@ -48,7 +76,9 @@ export interface TranscriptTurn {
   language?: string | null;
 }
 
-export type CallStatus = "in_progress" | "completed" | "abandoned";
+// Phone calls (Twilio) also go through "ringing", and can end as "not_answered" or "failed".
+export type CallStatus = "ringing" | "in_progress" | "completed" | "abandoned" | "not_answered" | "failed";
+export type CallChannel = "browser" | "phone";
 export type CallOutcome = "DANGER_SIGN" | "ROUTINE" | "CALLBACK" | "NOT_REACHABLE";
 
 /** A follow-up call is a live voice conversation: Prisma STT → Gemini → Timbre TTS. */
@@ -58,6 +88,7 @@ export interface Call {
   beneficiary_name: string;
   language: LanguageCode;
   status: CallStatus;
+  channel: CallChannel; // "phone" = her real phone rang (Twilio); "browser" = the call ran in this browser
   outcome: CallOutcome | null;
   danger_signs: string[];
   summary: string | null;

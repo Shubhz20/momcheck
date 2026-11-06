@@ -96,8 +96,12 @@ async def synthesize(
     speed: float = 1.0,
     sample_rate: int = 24000,
     container: str = "wav",
+    encoding: str = "linear_pcm",
 ) -> bytes:
-    """Synthesize speech and return audio bytes (WAV by default)."""
+    """Synthesize speech and return audio bytes (WAV by default).
+
+    encoding="pcm_mulaw" with container="raw" gives 8-bit mu-law, the format phone networks (Twilio) use.
+    """
     s = get_settings()
     payload = {
         "text": text,
@@ -108,8 +112,8 @@ async def synthesize(
         "audio_config": {
             "sample_rate": sample_rate,
             "num_channels": 1,
-            "sample_width": 2,
-            "encoding": "linear_pcm",
+            "sample_width": 1 if encoding in ("pcm_mulaw", "pcm_alaw") else 2,
+            "encoding": encoding,
             "container": container,
         },
     }

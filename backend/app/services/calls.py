@@ -18,7 +18,7 @@ from .. import llm, prompts
 from ..config import get_settings
 from ..gnani import speech
 from ..languages import language_name
-from ..models import Alert, Beneficiary, Call, utcnow
+from ..models import Alert, Asha, Beneficiary, Call, utcnow
 from .serialize import days_since_delivery, today, weeks_pregnant
 
 log = logging.getLogger("calls")
@@ -43,11 +43,16 @@ def _signs_for(b: Beneficiary) -> list[str]:
     return prompts.POSTNATAL_DANGER_SIGNS if b.category == "postnatal" else prompts.PREGNANCY_DANGER_SIGNS
 
 
-def _system_prompt(b: Beneficiary) -> str:
+def asha_name_for(session: Session, b: Beneficiary) -> str:
+    asha = session.get(Asha, b.asha_id) if b.asha_id else None
+    return asha.name if asha else get_settings().asha_name
+
+
+def _system_prompt(session: Session, b: Beneficiary) -> str:
     return prompts.render_system_prompt(
         name=b.name,
         village=b.village,
-        asha_name=get_settings().asha_name,
+        asha_name=asha_name_for(session, b),
         category=b.category,
         weeks_pregnant=weeks_pregnant(b),
         days_since_delivery=days_since_delivery(b),
@@ -139,27 +144,34 @@ async def start_call(session: Session, b: Beneficiary, phone_line: bool = True) 
     return call, reply
 
 
-async def take_turn(session: Session, call: Call, audio: bytes, filename: str, phone_line: bool) -> dict[str, Any]:
+async def respond(session: Session, call: Call, audio: bytes | None, filename: str = "turn.wav") -> dict[str, Any]:
+    """One turn without the spoken reply: her audio -> Prisma STT -> Gemini -> saved transcript (+ alert).
+
+    audio=None means she said nothing (e.g. silence on a phone call); the assistant then asks again.
+    Returns user_text, detected_language, reply_text, end_call, alert_raised and stt_ms / llm_ms.
+    """
     if call.status != "in_progress":
         raise CallError("This call has already ended.", 409)
     b = session.get(Beneficiary, call.beneficiary_id)
-    call.phone_line = call.phone_line or phone_line
 
     # 1. Speech to text (Gnani Prisma)
-    started = time.perf_counter()
-    try:
-        stt = await speech.transcribe(
-            audio,
-            filename=filename or "turn.wav",
-            language_code=_stt_languages(b.language),
-            keyterms=[b.name, *(b.village.split(",")[:1]), "ASHA", "PHC", "108"],
-            topic="A pregnant woman or new mother talking to a maternal-health follow-up assistant.",
-        )
-    except speech.SpeechError as exc:
-        raise CallError(f"Speech recognition failed: {exc}", 502) from exc
-    stt_ms = int((time.perf_counter() - started) * 1000)
-    user_text = (stt.get("transcript") or "").strip()
-    detected = stt.get("detected_language_code")
+    stt_ms = None
+    user_text, detected = "", None
+    if audio:
+        started = time.perf_counter()
+        try:
+            stt = await speech.transcribe(
+                audio,
+                filename=filename or "turn.wav",
+                language_code=_stt_languages(b.language),
+                keyterms=[b.name, *(b.village.split(",")[:1]), "ASHA", "PHC", "108"],
+                topic="A pregnant woman or new mother talking to a maternal-health follow-up assistant.",
+            )
+        except speech.SpeechError as exc:
+            raise CallError(f"Speech recognition failed: {exc}", 502) from exc
+        stt_ms = int((time.perf_counter() - started) * 1000)
+        user_text = (stt.get("transcript") or "").strip()
+        detected = stt.get("detected_language_code")
 
     # 2. Decide what to say (Gemini), with the full conversation so far
     history: list[tuple[str, str]] = [("user", "(The call has connected.)")]
@@ -175,7 +187,7 @@ async def take_turn(session: Session, call: Call, audio: bytes, filename: str, p
 
     started = time.perf_counter()
     try:
-        result = await llm.chat_json(_system_prompt(b), history)
+        result = await llm.chat_json(_system_prompt(session, b), history)
     except llm.LLMError as exc:
         raise CallError(f"The assistant could not respond: {exc}", 502) from exc
     llm_ms = int((time.perf_counter() - started) * 1000)
@@ -195,17 +207,32 @@ async def take_turn(session: Session, call: Call, audio: bytes, filename: str, p
         alert_raised = _upsert_alert(session, call, signs)
     session.add(call)
     session.commit()
-
-    # 4. Text to speech (Gnani Timbre)
-    audio_url, tts_ms = await _speak(reply_text, b.language, call.phone_line)
     return {
         "user_text": user_text or None,
         "detected_language": detected,
         "reply_text": reply_text,
-        "reply_audio": audio_url,
         "end_call": end_call,
         "alert_raised": alert_raised,
-        "timings": {"stt_ms": stt_ms, "llm_ms": llm_ms, "tts_ms": tts_ms},
+        "stt_ms": stt_ms,
+        "llm_ms": llm_ms,
+    }
+
+
+async def take_turn(session: Session, call: Call, audio: bytes, filename: str, phone_line: bool) -> dict[str, Any]:
+    """Browser call turn: respond(), then Timbre TTS as an MP3 data URL."""
+    if call.status != "in_progress":
+        raise CallError("This call has already ended.", 409)
+    call.phone_line = call.phone_line or phone_line
+    turn = await respond(session, call, audio, filename)
+    audio_url, tts_ms = await _speak(turn["reply_text"], call.language, call.phone_line)
+    return {
+        "user_text": turn["user_text"],
+        "detected_language": turn["detected_language"],
+        "reply_text": turn["reply_text"],
+        "reply_audio": audio_url,
+        "end_call": turn["end_call"],
+        "alert_raised": turn["alert_raised"],
+        "timings": {"stt_ms": turn["stt_ms"], "llm_ms": turn["llm_ms"], "tts_ms": tts_ms},
     }
 
 

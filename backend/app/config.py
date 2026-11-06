@@ -1,6 +1,7 @@
 """Settings loaded from environment variables (and a local .env file in development)."""
 from __future__ import annotations
 
+import hashlib
 import os
 from functools import lru_cache
 from pathlib import Path
@@ -35,8 +36,24 @@ class Settings:
         ]
 
         self.database_url = self._normalise_db_url(_env("DATABASE_URL", f"sqlite:///{ROOT_DIR / 'momcheck.db'}"))
-        self.asha_name = _env("ASHA_NAME", "Asha didi")
+        self.asha_name = _env("ASHA_NAME", "Asha didi")  # fallback when a woman has no ASHA account
+
+        # Signs session cookies. Without SECRET_KEY, derive a stable secret from other server-only secrets.
+        self.secret_key = _env("SECRET_KEY") or hashlib.sha256(
+            f"momcheck-session:{self.database_url}:{self.speech_api_key}".encode()
+        ).hexdigest()
+
+        # Twilio (real phone calls). The trial account can only call numbers verified on it.
+        self.twilio_account_sid = _env("TWILIO_ACCOUNT_SID")
+        self.twilio_auth_token = _env("TWILIO_AUTH_TOKEN")
+        self.twilio_from_number = _env("TWILIO_FROM_NUMBER")
+        # Public https URL of this app, for Twilio's callbacks. Render sets RENDER_EXTERNAL_URL itself.
+        self.public_base_url = (_env("PUBLIC_BASE_URL") or _env("RENDER_EXTERNAL_URL")).rstrip("/")
         self.max_turns = int(_env("MAX_CALL_TURNS", "14"))
+
+    @property
+    def phone_calls_configured(self) -> bool:
+        return bool(self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number)
 
     @staticmethod
     def _normalise_db_url(url: str) -> str:

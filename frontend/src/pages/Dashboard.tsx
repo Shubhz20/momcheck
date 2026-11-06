@@ -9,6 +9,7 @@ import { RiskBadge } from "../components/badges";
 import { useToast } from "../components/Toast";
 import { Avatar, Button, Card, EmptyState, ErrorBox, PageHeader, SectionHeader, Skeleton, SkeletonList, cx } from "../components/ui";
 import { useAsync } from "../hooks/useAsync";
+import { useMe } from "../hooks/useAuth";
 import { useLanguages } from "../hooks/useLanguages";
 import { dueLabel, formatDate, stageLabel } from "../lib/format";
 
@@ -63,6 +64,8 @@ function VisitRow({ b }: { b: Beneficiary }) {
 
 export function DashboardPage() {
   const toast = useToast();
+  const me = useMe();
+  const greeting = `Namaste, ${me.name.split(" ")[0]} 🙏`;
   const { refresh: refreshLanguages } = useLanguages();
   const { data, error, loading, reload, setData } = useAsync<DashboardData>(() => api.dashboard(), []);
   const [seeding, setSeeding] = useState(false);
@@ -71,7 +74,7 @@ export function DashboardPage() {
     setSeeding(true);
     try {
       const r = await api.seedDemo();
-      toast.success(r.created ? `Added ${r.created} demo women` : "Demo data already exists");
+      toast.success(r.created ? `Added ${r.created} sample women` : "You already have women registered");
       await reload();
       refreshLanguages();
     } catch (e) {
@@ -118,14 +121,14 @@ export function DashboardPage() {
   if (data.totals.beneficiaries === 0)
     return (
       <>
-        <PageHeader title="Namaste 🙏" subtitle={today} />
+        <PageHeader title={greeting} subtitle={today} />
         <EmptyState
           icon={<Users className="size-6" />}
           title="No women registered yet"
           action={
             <div className="flex flex-wrap justify-center gap-2">
               <Button onClick={seed} loading={seeding} icon={<Database className="size-4" />}>
-                Load demo data
+                Load sample women
               </Button>
               <Link to="/women?add=1" className="inline-flex h-10 items-center rounded-xl border border-line bg-white px-4 text-sm font-medium text-ink hover:bg-stone-50">
                 Add a woman
@@ -143,7 +146,7 @@ export function DashboardPage() {
 
   return (
     <>
-      <PageHeader title="Namaste 🙏" subtitle={`${today} · Here's how your women are doing`} />
+      <PageHeader title={greeting} subtitle={`${today} · Here's how your women are doing`} />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
