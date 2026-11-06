@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Check, Mic, RotateCcw, Square } from "lucide-react";
 import { api } from "../api/client";
 import type { Beneficiary, NoteDraft } from "../api/types";
+import { SavedNotes } from "../components/SavedNotes";
 import { useToast } from "../components/Toast";
 import { Button, Card, ErrorBox, Field, PageHeader, Spinner, cx, inputClass } from "../components/ui";
 import { useRecorder } from "../hooks/useRecorder";
@@ -21,6 +22,7 @@ export function VoiceNotePage() {
   const [saving, setSaving] = useState(false);
   const [women, setWomen] = useState<Beneficiary[]>([]);
   const [savedFor, setSavedFor] = useState<{ id: number | null; name: string | null } | null>(null);
+  const [savedCount, setSavedCount] = useState(0);
 
   useEffect(() => {
     api
@@ -61,6 +63,7 @@ export function VoiceNotePage() {
       const note = await api.saveNote(draft);
       toast.success("Visit note saved");
       setSavedFor({ id: note.beneficiary_id, name: note.beneficiary_name });
+      setSavedCount((c) => c + 1);
       setStep("saved");
     } catch (e) {
       toast.error((e as Error).message);
@@ -180,6 +183,9 @@ export function VoiceNotePage() {
             <Check className="size-7" />
           </div>
           <p className="mt-4 text-lg font-medium text-ink">Note saved</p>
+          <p className="mt-1 text-sm text-muted">
+            {savedFor?.id ? `It's in ${savedFor.name ?? "her"}'s visit notes and in the list below.` : "It's in the list below. Link it to a woman there."}
+          </p>
           <div className="mt-5 flex flex-wrap justify-center gap-2">
             {savedFor?.id && (
               <Link
@@ -195,6 +201,8 @@ export function VoiceNotePage() {
           </div>
         </Card>
       )}
+
+      {step !== "confirm" && <SavedNotes women={women} refreshKey={savedCount} />}
     </>
   );
 }

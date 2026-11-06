@@ -169,7 +169,8 @@ export interface Dashboard {
 
 export type BeneficiaryDetail = Beneficiary & {
   calls: Call[];
-  notes: Note[];
+  /** Spoken visit notes. (`notes` is the free-text field typed in her profile.) */
+  visit_notes: Note[];
   alerts: Alert[];
 };
 
@@ -189,4 +190,11 @@ export interface BeneficiaryInput {
 export interface Briefing {
   text: string;
   language: LanguageCode;
+  day: string;
+}
+
+/** A briefing kept from an earlier generation: one per day and language. */
+export interface SavedBriefing extends Briefing {
+  id: number;
+  updated_at: string;
 }

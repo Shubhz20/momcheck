@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Layout } from "./components/Layout";
 import { ToastProvider } from "./components/Toast";
 import { Spinner } from "./components/ui";
@@ -47,7 +48,9 @@ export default function App() {
       <LanguagesProvider>
         <AuthProvider>
           <BrowserRouter>
-            <SignedInRoutes />
+            <ErrorBoundary>
+              <SignedInRoutes />
+            </ErrorBoundary>
           </BrowserRouter>
         </AuthProvider>
       </LanguagesProvider>

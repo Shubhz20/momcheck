@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { LayoutDashboard, LogOut, Mic, RotateCcw, Sunrise, Users } from "lucide-react";
 import { api } from "../api/client";
 import { useAuth, useMe } from "../hooks/useAuth";
@@ -74,6 +75,7 @@ function DemoBanner() {
 
 export function Layout() {
   const { signOut } = useAuth();
+  const location = useLocation();
   return (
     <div className="min-h-screen md:flex">
       {/* Desktop sidebar */}
@@ -126,7 +128,9 @@ export function Layout() {
       <main className="min-w-0 flex-1">
         <div className="mx-auto max-w-6xl px-4 pb-28 pt-5 md:px-8 md:pb-12 md:pt-8">
           <DemoBanner />
-          <Outlet />
+          <ErrorBoundary resetKey={location.pathname}>
+            <Outlet />
+          </ErrorBoundary>
           <PoweredBy className="mt-12 text-center md:hidden" />
         </div>
       </main>

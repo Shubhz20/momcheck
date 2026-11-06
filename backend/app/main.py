@@ -19,7 +19,7 @@ from .db import get_session, init_db
 from .gnani.speech import SpeechError
 from .languages import LANGUAGES
 from .llm import LLMError
-from .models import Alert, Asha, Beneficiary, Call, Note, utcnow
+from .models import Alert, Asha, Beneficiary, Briefing, Call, Note, utcnow
 from .seed import delete_women, reset_demo, seed_sample
 from .services import briefing, calls, notes
 from .services.briefing import _start_of_today_utc
@@ -129,6 +129,10 @@ class SignupIn(BaseModel):
 
 class DemoLoginIn(BaseModel):
     asha_id: int
+
+
+class NoteLinkIn(BaseModel):
+    beneficiary_id: Optional[int] = None
 
 
 class NoteIn(BaseModel):
@@ -351,7 +355,7 @@ def get_beneficiary(bid: int, asha: Asha = Depends(current_asha), session: Sessi
         call_out(c, b.name)
         for c in session.exec(select(Call).where(Call.beneficiary_id == bid).order_by(Call.triggered_at.desc())).all()
     ]
-    out["notes"] = [
+    out["visit_notes"] = [
         note_out(n, b.name)
         for n in session.exec(select(Note).where(Note.beneficiary_id == bid).order_by(Note.created_at.desc())).all()
     ]
@@ -527,6 +531,41 @@ def create_note(body: NoteIn, asha: Asha = Depends(current_asha), session: Sessi
     return note_out(n, b.name if b else None)
 
 
+def _get_note(session: Session, nid: int, asha: Asha) -> Note:
+    n = session.get(Note, nid)
+    if not n or n.asha_id != asha.id:
+        raise HTTPException(404, "Note not found")
+    return n
+
+
+@app.get("/api/notes")
+def list_notes(
+    limit: int = Query(50, ge=1, le=200), asha: Asha = Depends(current_asha), session: Session = Depends(get_session)
+) -> list[dict[str, Any]]:
+    women = _names(session, asha)
+    rows = session.exec(select(Note).where(Note.asha_id == asha.id).order_by(Note.created_at.desc()).limit(limit)).all()
+    return [note_out(n, women[n.beneficiary_id].name if n.beneficiary_id in women else None) for n in rows]
+
+
+@app.patch("/api/notes/{nid}")
+def link_note(nid: int, body: NoteLinkIn, asha: Asha = Depends(current_asha), session: Session = Depends(get_session)) -> dict[str, Any]:
+    """Link a note to one of her women (or unlink it with beneficiary_id null)."""
+    n = _get_note(session, nid, asha)
+    b = _get_beneficiary(session, body.beneficiary_id, asha) if body.beneficiary_id is not None else None
+    n.beneficiary_id = b.id if b else None
+    session.add(n)
+    session.commit()
+    session.refresh(n)
+    return note_out(n, b.name if b else None)
+
+
+@app.delete("/api/notes/{nid}")
+def delete_note(nid: int, asha: Asha = Depends(current_asha), session: Session = Depends(get_session)) -> dict[str, bool]:
+    session.delete(_get_note(session, nid, asha))
+    session.commit()
+    return {"ok": True}
+
+
 # ---- briefing ---------------------------------------------------------------
 @app.get("/api/briefing")
 async def get_briefing(
@@ -536,7 +575,27 @@ async def get_briefing(
     if language not in LANGUAGES:
         raise HTTPException(400, f"Unsupported language {language}")
     text, used = await briefing.briefing_text(session, asha, language)
-    return {"text": text, "language": used}
+    return {"text": text, "language": used, "day": today().isoformat()}
+
+
+@app.get("/api/briefings")
+def list_briefings(
+    limit: int = Query(30, ge=1, le=100), asha: Asha = Depends(current_asha), session: Session = Depends(get_session)
+) -> list[dict[str, Any]]:
+    """Her saved briefings, newest day first (one per day and language)."""
+    return briefing.history(session, asha, limit)
+
+
+@app.get("/api/briefings/{brid}/audio")
+async def saved_briefing_audio(brid: int, asha: Asha = Depends(current_asha), session: Session = Depends(get_session)) -> Response:
+    b = session.get(Briefing, brid)
+    if not b or b.asha_id != asha.id:
+        raise HTTPException(404, "Briefing not found")
+    try:
+        audio = await briefing.speak(b.text, b.language)
+    except SpeechError as exc:
+        raise HTTPException(502, f"Text-to-speech failed: {exc}") from exc
+    return Response(content=audio, media_type="audio/wav", headers={"Cache-Control": "private, max-age=3600"})
 
 
 @app.get("/api/briefing/audio")

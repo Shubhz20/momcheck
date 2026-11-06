@@ -85,3 +85,14 @@ class Note(SQLModel, table=True):
     follow_up_date: Optional[date] = None
     summary: str = ""
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class Briefing(SQLModel, table=True):
+    """A saved daily briefing: one per ASHA, day (IST) and language. Generating it again the same day replaces it."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    asha_id: int = Field(foreign_key="asha.id", index=True)
+    day: date = Field(index=True)
+    language: str
+    text: str
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)

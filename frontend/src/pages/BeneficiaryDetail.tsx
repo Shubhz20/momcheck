@@ -270,9 +270,9 @@ export function BeneficiaryDetailPage() {
               </Link>
             }
           />
-          {data.notes.length ? (
+          {data.visit_notes.length ? (
             <div className="space-y-3">
-              {data.notes.map((n) => (
+              {data.visit_notes.map((n) => (
                 <Card key={n.id} className="p-4">
                   <div className="flex items-center justify-between gap-2">
                     <Badge tone="brand" icon={<NotebookPen className="size-3" />}>

@@ -12,6 +12,7 @@ import type {
   Me,
   Note,
   NoteDraft,
+  SavedBriefing,
   SignupInput,
   StartCallResponse,
   TurnReply,
@@ -114,9 +115,14 @@ export const api = {
     return request<NoteDraft>("POST", "/notes/draft", fd);
   },
   saveNote: (d: NoteDraft) => request<Note>("POST", "/notes", d),
+  notes: (limit = 50) => request<Note[]>("GET", `/notes${qs({ limit })}`),
+  linkNote: (id: number, beneficiaryId: number | null) => request<Note>("PATCH", `/notes/${id}`, { beneficiary_id: beneficiaryId }),
+  deleteNote: (id: number) => request<{ ok: boolean }>("DELETE", `/notes/${id}`),
 
   briefing: (language: LanguageCode) => request<Briefing>("GET", `/briefing${qs({ language })}`),
   briefingAudioUrl: (language: LanguageCode, bust: number) => `/api/briefing/audio${qs({ language, t: bust })}`,
+  briefings: (limit = 30) => request<SavedBriefing[]>("GET", `/briefings${qs({ limit })}`),
+  savedBriefingAudioUrl: (id: number) => `/api/briefings/${id}/audio`,
 
   seedDemo: () => request<{ created: number }>("POST", "/demo/seed"),
 };

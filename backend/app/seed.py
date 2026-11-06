@@ -13,7 +13,7 @@ from typing import Iterable
 
 from sqlmodel import Session, func, select
 
-from .models import Alert, Asha, Beneficiary, Call, Note
+from .models import Alert, Asha, Beneficiary, Briefing, Call, Note
 from .services.serialize import today
 
 log = logging.getLogger("seed")
@@ -132,8 +132,9 @@ def reset_demo(session: Session, asha: Asha) -> int:
     if spec is None:
         raise ValueError("Only demo accounts can be reset")
     delete_women(session, session.exec(select(Beneficiary).where(Beneficiary.asha_id == asha.id)).all())
-    for n in session.exec(select(Note).where(Note.asha_id == asha.id)).all():
-        session.delete(n)
+    for model in (Note, Briefing):
+        for row in session.exec(select(model).where(model.asha_id == asha.id)).all():
+            session.delete(row)
     session.commit()
     return _add_women(session, asha, spec["women"], spec["phone_base"])
 

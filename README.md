@@ -11,7 +11,7 @@ MomCheck takes over the routine follow-up conversation. In the woman's own langu
 - reminds her of her next check-up and answers common questions,
 - **raises an alert for the ASHA during the call** if she reports a danger sign.
 
-When the call ends, the ASHA sees an English summary, the outcome and the full transcript on her dashboard. She can also record a spoken note after a home visit, and it is saved as a structured record. Each morning she gets a **spoken briefing** in her own language.
+When the call ends, the ASHA sees an English summary, the outcome and the full transcript on her dashboard. She can also record a spoken note after a home visit, and it is saved as a structured record on that woman's profile. Each morning she gets a **spoken briefing** in her own language, and each day's briefing is kept so she can listen to it again.
 
 > **Safety:** MomCheck screens and escalates. It never diagnoses or prescribes, and every danger sign goes to a human health worker. All names and numbers in this project are synthetic.
 

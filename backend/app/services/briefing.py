@@ -14,8 +14,8 @@ from sqlmodel import Session, select
 from .. import llm, prompts
 from ..gnani import speech
 from ..languages import language_name
-from ..models import Alert, Asha, Beneficiary, Call
-from .serialize import IST, today
+from ..models import Alert, Asha, Beneficiary, Briefing, Call, utcnow
+from .serialize import IST, iso, today
 
 log = logging.getLogger("briefing")
 
@@ -101,7 +101,32 @@ async def briefing_text(session: Session, asha: Asha, language: str) -> tuple[st
         log.warning("Briefing LLM failed, using English template: %s", exc)
         text, language = _fallback_text(data), "en-IN"
     _cache[(asha.id, language)] = (time.time(), text)
+    _save(session, asha, language, text)
     return text, language
+
+
+def _save(session: Session, asha: Asha, language: str, text: str) -> None:
+    """Keep today's briefing. A newer one on the same day (same language) replaces it."""
+    row = session.exec(
+        select(Briefing).where(Briefing.asha_id == asha.id, Briefing.day == today(), Briefing.language == language)
+    ).first()
+    if row:
+        row.text, row.updated_at = text, utcnow()
+    else:
+        row = Briefing(asha_id=asha.id, day=today(), language=language, text=text)
+    session.add(row)
+    session.commit()
+
+
+def briefing_out(b: Briefing) -> dict:
+    return {"id": b.id, "day": b.day.isoformat(), "language": b.language, "text": b.text, "updated_at": iso(b.updated_at)}
+
+
+def history(session: Session, asha: Asha, limit: int = 30) -> list[dict]:
+    rows = session.exec(
+        select(Briefing).where(Briefing.asha_id == asha.id).order_by(Briefing.day.desc(), Briefing.updated_at.desc()).limit(limit)
+    ).all()
+    return [briefing_out(b) for b in rows]
 
 
 def _chunks(text: str, limit: int = 280) -> list[str]:
@@ -136,7 +161,11 @@ def _concat_wavs(parts: list[bytes]) -> bytes:
     return buf.getvalue()
 
 
+async def speak(text: str, language: str) -> bytes:
+    parts = [await speech.synthesize(chunk, language) for chunk in _chunks(text)]
+    return parts[0] if len(parts) == 1 else _concat_wavs(parts)
+
+
 async def briefing_audio(session: Session, asha: Asha, language: str) -> bytes:
     text, used_language = await briefing_text(session, asha, language)
-    parts = [await speech.synthesize(chunk, used_language) for chunk in _chunks(text)]
-    return parts[0] if len(parts) == 1 else _concat_wavs(parts)
+    return await speak(text, used_language)

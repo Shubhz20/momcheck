@@ -131,7 +131,7 @@ interface Dashboard {
 | GET | `/api/languages` | | `Language[]` |
 | GET | `/api/beneficiaries` | `?q=&language=&category=` | `Beneficiary[]` |
 | POST | `/api/beneficiaries` | name, phone, language, village, category, edd?, delivery_date?, next_visit_date?, next_visit_type?, notes? | `Beneficiary` |
-| GET | `/api/beneficiaries/{id}` | | `Beneficiary & { calls: Call[]; notes: Note[]; alerts: Alert[] }` |
+| GET | `/api/beneficiaries/{id}` | | `Beneficiary & { calls: Call[]; visit_notes: Note[]; alerts: Alert[] }` (`notes` stays the free-text field from her profile) |
 | PATCH | `/api/beneficiaries/{id}` | any POST field | `Beneficiary` |
 | DELETE | `/api/beneficiaries/{id}` | | `{ ok: true }` |
 | POST | `/api/beneficiaries/{id}/call` | | `{ call: Call; reply: TurnReply }`: starts a voice call, `reply` is MomCheck's spoken greeting |
@@ -145,8 +145,13 @@ interface Dashboard {
 | POST | `/api/alerts/{id}/ack` | | `Alert` |
 | POST | `/api/notes/draft` | multipart: `audio` (WAV, 16 kHz mono, ≤ 30 s), `language?` | `NoteDraft` |
 | POST | `/api/notes` | `NoteDraft` | `Note` |
-| GET | `/api/briefing` | `?language=hi-IN` | `{ text: string; language: LanguageCode }` |
+| GET | `/api/notes` | `?limit=50` | `Note[]`: all her saved notes, newest first, including ones not linked to a woman |
+| PATCH | `/api/notes/{id}` | `{ beneficiary_id: number \| null }` | `Note`: link the note to one of her women, or unlink it |
+| DELETE | `/api/notes/{id}` | | `{ ok: true }` |
+| GET | `/api/briefing` | `?language=hi-IN` | `{ text: string; language: LanguageCode; day: string }`. Also saved as that day's briefing (one per day and language; a newer one the same day replaces it) |
 | GET | `/api/briefing/audio` | `?language=hi-IN` | `audio/wav` |
+| GET | `/api/briefings` | `?limit=30` | `{ id, day, language, text, updated_at }[]`: her saved briefings, newest day first |
+| GET | `/api/briefings/{id}/audio` | | `audio/wav`: a saved briefing, spoken again |
 | POST | `/api/demo/seed` | | `{ created: number }`: adds sample women to the signed-in account if it has none |
 | POST | `/api/twilio/status/{call_id}?token=` | Twilio status callback (form) | `204`. Marks unanswered / busy / failed calls |
 | WS | `/api/twilio/stream` | Twilio Media Stream (bidirectional, 8 kHz mu-law) | The live phone conversation; the `start` message must carry the call's `call_id` and `token` |
