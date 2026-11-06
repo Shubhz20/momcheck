@@ -47,6 +47,7 @@ class Beneficiary(SQLModel, table=True):
     lat: Optional[float] = None  # home location, for the ASHA's map
     lng: Optional[float] = None
     ask_token: Optional[str] = Field(default=None, index=True)  # her personal "Ask MomCheck" link
+    source: str = "asha"  # asha (registered by her ASHA) | self (she joined on the website)
     created_at: datetime = Field(default_factory=utcnow)
 
 
@@ -58,7 +59,8 @@ class Call(SQLModel, table=True):
     language: str
     # in_progress | completed | abandoned; phone calls also: ringing | not_answered | failed
     status: str = "in_progress"
-    # browser | phone | ask (she started it from her Ask MomCheck link) | interpreter (ASHA <-> her, translated)
+    # browser | phone | ask (she asked from her own link) | checkin (her scheduled check-in, from her link)
+    # | interpreter (ASHA <-> her, translated)
     channel: str = "browser"
     provider_sid: Optional[str] = None  # Twilio Call SID for phone calls
     stream_token: Optional[str] = None  # secret that the Twilio media stream must present
@@ -110,3 +112,11 @@ class Briefing(SQLModel, table=True):
     text: str
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
+
+
+class Usage(SQLModel, table=True):
+    """API use per day (IST): stt_seconds, stt_requests, tts_chars, tts_requests, vc_requests, llm_requests."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    day: date = Field(index=True)
+    kind: str = Field(index=True)
+    units: float = 0

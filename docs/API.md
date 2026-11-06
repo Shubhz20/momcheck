@@ -160,12 +160,17 @@ interface Dashboard {
 | POST | `/api/beneficiaries/{id}/interpreter` | | `Call` (channel `interpreter`) |
 | POST | `/api/calls/{id}/interpret` | multipart: `audio`, `speaker` = `asha` or `mother` | `InterpretTurn`: what was said, the translation, English, audio for the other side, live checklist |
 | POST | `/api/beneficiaries/{id}/ask-link` | `?rotate=true` makes a new one | `{ token, path }`: her personal Ask MomCheck link |
-| GET | `/api/ask/{token}` | public | `{ first_name, language, category, asha_name, asha_voice }` |
-| POST | `/api/ask/{token}/start` | public | `{ call_id, reply_text, reply_audio }` (15 conversations per day per link) |
+| POST | `/api/join` | public: `{ name, language, category, weeks? , days_since_birth?, village? }` | `{ token, path }`: a mother signs herself up (no phone number; 3 per visitor per day; removed after 3 days in the demo) |
+| GET | `/api/ask/{token}` | public | `{ first_name, language, category, asha_name, asha_voice, self_registered, weeks_pregnant, days_since_delivery, schedule }` |
+| GET | `/api/ask/{token}/calendar.ics` | public | Her check-ins as phone-calendar reminders, each linking to her page |
+| POST | `/api/ask/{token}/start` | public, `?mode=ask` (her question) or `checkin` (MomCheck goes through her checklist) | `{ call_id, reply_text, reply_audio }` (15 conversations per day per link) |
 | POST | `/api/ask/{token}/calls/{id}/turn` | public, multipart `audio` | `{ user_text, reply_text, reply_audio, end_call, alert_raised, asha_told }` |
 | POST | `/api/ask/{token}/calls/{id}/end` | public | `{ status, asha_told }` |
+| GET | `/api/usage` | own (non-demo) accounts only | `{ today, caps, days }`: Gnani / Gemini use against the daily caps |
 | POST | `/api/demo/seed` | | `{ created: number }`: adds sample women to the signed-in account if it has none |
 | POST | `/api/twilio/status/{call_id}?token=` | Twilio status callback (form) | `204`. Marks unanswered / busy / failed calls |
 | WS | `/api/twilio/stream` | Twilio Media Stream (bidirectional, 8 kHz mu-law) | The live phone conversation; the `start` message must carry the call's `call_id` and `token` |
 
 Errors are returned as `{ "detail": "human readable message" }` with a 4xx or 5xx status.
+
+When a daily cap is reached, or a visitor uses up their daily allowance, the API answers `429` with a readable `detail`.

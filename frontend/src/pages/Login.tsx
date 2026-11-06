@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowRight, KeyRound, Languages, MapPin, ShieldCheck, UserPlus, Users } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, HeartHandshake, KeyRound, Languages, MapPin, ShieldCheck, UserPlus, Users } from "lucide-react";
 import { api } from "../api/client";
 import type { DemoAccount, LanguageCode } from "../api/types";
 import { Logo } from "../components/Logo";
@@ -47,6 +47,26 @@ export function LoginPage() {
           </p>
         </div>
 
+        <section className="mt-8">
+          <Link
+            to="/join"
+            className="group flex flex-wrap items-center gap-4 rounded-2xl bg-gradient-to-r from-blush-100 via-blush-50 to-white p-5 ring-1 ring-blush-200 transition hover:ring-blush-400"
+          >
+            <div className="rounded-full bg-blush-600 p-3 text-white">
+              <HeartHandshake className="size-6" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-lg font-semibold text-ink">Try it as a mother</p>
+              <p className="text-sm text-muted">
+                Tell MomCheck how far along you are, then talk to it on your phone in your language. No sign-up, no phone number.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-blush-600">
+              Start <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </Link>
+        </section>
+
         <section className="mt-10">
           <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
             <div>
@@ -81,7 +101,7 @@ export function LoginPage() {
             </p>
             <p className="flex gap-2">
               <Languages className="mt-0.5 size-4 shrink-0 text-brand-700" />
-              Speech by Gnani AI (Prisma speech-to-text, Timbre text-to-speech) in 10 Indian languages. Reasoning by Gemini.
+              Speech by Gnani AI (Prisma speech-to-text, Timbre text-to-speech, voice cloning) in 10 Indian languages. Reasoning by Gemini.
             </p>
           </aside>
         </section>

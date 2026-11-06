@@ -9,6 +9,11 @@ export interface AskStrings {
   thinking: string;
   told: string;
   emergency: string;
+  checkin: string;
+  ask: string;
+  schedule: string;
+  remind: string;
+  today: string;
 }
 
 export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
@@ -20,6 +25,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "मॉमचेक सोच रहा है…",
     told: "{asha} दीदी को बता दिया गया है, वे जल्दी आपसे संपर्क करेंगी।",
     emergency: "आपातकाल में 108 पर फ़ोन करें, एम्बुलेंस मुफ़्त है",
+    checkin: "आज का चेक-इन",
+    ask: "कुछ पूछना है",
+    schedule: "मॉमचेक आपसे इन दिनों बात करेगा",
+    remind: "फ़ोन में याद दिलाने के लिए जोड़ें",
+    today: "आज",
   },
   "en-IN": {
     intro: "Worried about your health or your baby? Ask MomCheck in your own language.",
@@ -29,6 +39,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "MomCheck is thinking…",
     told: "{asha} has been told and will contact you soon.",
     emergency: "Emergency? Call 108, the ambulance is free",
+    checkin: "Today's check-in",
+    ask: "Ask a question",
+    schedule: "MomCheck will check on you on these days",
+    remind: "Add reminders to my phone",
+    today: "Today",
   },
   "mr-IN": {
     intro: "तुमच्या किंवा बाळाच्या तब्येतीबद्दल काही काळजी? मॉमचेकला तुमच्या भाषेत विचारा.",
@@ -38,6 +53,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "मॉमचेक विचार करत आहे…",
     told: "{asha} ताईंना कळवलं आहे, त्या लवकरच तुमच्याशी संपर्क करतील.",
     emergency: "आणीबाणीत 108 वर फोन करा, रुग्णवाहिका मोफत आहे",
+    checkin: "आजचे चेक-इन",
+    ask: "काही विचारायचं आहे",
+    schedule: "मॉमचेक या दिवशी तुमची चौकशी करेल",
+    remind: "फोनमध्ये आठवण जोडा",
+    today: "आज",
   },
   "bn-IN": {
     intro: "নিজের বা বাচ্চার শরীর নিয়ে কোনো চিন্তা? মমচেককে নিজের ভাষায় জিজ্ঞেস করুন।",
@@ -47,6 +67,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "মমচেক ভাবছে…",
     told: "{asha} দিদিকে জানানো হয়েছে, উনি শীঘ্রই আপনার সঙ্গে যোগাযোগ করবেন।",
     emergency: "জরুরি অবস্থায় 108-এ ফোন করুন, অ্যাম্বুলেন্স বিনামূল্যে",
+    checkin: "আজকের চেক-ইন",
+    ask: "কিছু জিজ্ঞেস করুন",
+    schedule: "মমচেক এই দিনগুলোতে আপনার খোঁজ নেবে",
+    remind: "ফোনে রিমাইন্ডার যোগ করুন",
+    today: "আজ",
   },
   "ta-IN": {
     intro: "உங்கள் அல்லது குழந்தையின் உடல்நலம் பற்றி கவலையா? மாம்செக்கிடம் உங்கள் மொழியில் கேளுங்கள்.",
@@ -56,6 +81,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "மாம்செக் யோசிக்கிறது…",
     told: "{asha} அக்காவுக்குத் தெரிவிக்கப்பட்டது, அவர் விரைவில் உங்களைத் தொடர்புகொள்வார்.",
     emergency: "அவசரத்தில் 108-ஐ அழையுங்கள், ஆம்புலன்ஸ் இலவசம்",
+    checkin: "இன்றைய சரிபார்ப்பு",
+    ask: "ஒரு கேள்வி கேளுங்கள்",
+    schedule: "இந்த நாட்களில் மாம்செக் உங்களை விசாரிக்கும்",
+    remind: "என் போனில் நினைவூட்டல் சேர்க்கவும்",
+    today: "இன்று",
   },
   "te-IN": {
     intro: "మీ లేదా బిడ్డ ఆరోగ్యం గురించి ఏదైనా ఆందోళనా? మామ్‌చెక్‌ను మీ భాషలో అడగండి.",
@@ -65,6 +95,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "మామ్‌చెక్ ఆలోచిస్తోంది…",
     told: "{asha} అక్కకు తెలియజేశాము, ఆమె త్వరలో మిమ్మల్ని సంప్రదిస్తారు.",
     emergency: "అత్యవసరమైతే 108కి కాల్ చేయండి, అంబులెన్స్ ఉచితం",
+    checkin: "ఈరోజు చెక్-ఇన్",
+    ask: "ఏదైనా అడగండి",
+    schedule: "ఈ రోజుల్లో మామ్‌చెక్ మీ యోగక్షేమాలు అడుగుతుంది",
+    remind: "నా ఫోన్‌లో రిమైండర్లు జోడించండి",
+    today: "ఈరోజు",
   },
   "kn-IN": {
     intro: "ನಿಮ್ಮ ಅಥವಾ ಮಗುವಿನ ಆರೋಗ್ಯದ ಬಗ್ಗೆ ಚಿಂತೆಯೇ? ಮಾಮ್‌ಚೆಕ್ ಅನ್ನು ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ ಕೇಳಿ.",
@@ -74,6 +109,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "ಮಾಮ್‌ಚೆಕ್ ಯೋಚಿಸುತ್ತಿದೆ…",
     told: "{asha} ಅಕ್ಕನಿಗೆ ತಿಳಿಸಲಾಗಿದೆ, ಅವರು ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತಾರೆ.",
     emergency: "ತುರ್ತು ಸಂದರ್ಭದಲ್ಲಿ 108ಕ್ಕೆ ಕರೆ ಮಾಡಿ, ಆಂಬ್ಯುಲೆನ್ಸ್ ಉಚಿತ",
+    checkin: "ಇಂದಿನ ಚೆಕ್-ಇನ್",
+    ask: "ಏನಾದರೂ ಕೇಳಿ",
+    schedule: "ಈ ದಿನಗಳಲ್ಲಿ ಮಾಮ್‌ಚೆಕ್ ನಿಮ್ಮನ್ನು ವಿಚಾರಿಸುತ್ತದೆ",
+    remind: "ನನ್ನ ಫೋನ್‌ಗೆ ಜ್ಞಾಪನೆಗಳನ್ನು ಸೇರಿಸಿ",
+    today: "ಇಂದು",
   },
   "ml-IN": {
     intro: "നിങ്ങളുടെയോ കുഞ്ഞിന്റെയോ ആരോഗ്യത്തെക്കുറിച്ച് ആശങ്കയുണ്ടോ? മോംചെക്കിനോട് നിങ്ങളുടെ ഭാഷയിൽ ചോദിക്കൂ.",
@@ -83,6 +123,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "മോംചെക്ക് ആലോചിക്കുന്നു…",
     told: "{asha} ചേച്ചിയെ അറിയിച്ചിട്ടുണ്ട്, അവർ ഉടൻ നിങ്ങളെ ബന്ധപ്പെടും.",
     emergency: "അടിയന്തര ഘട്ടത്തിൽ 108-ൽ വിളിക്കൂ, ആംബുലൻസ് സൗജന്യമാണ്",
+    checkin: "ഇന്നത്തെ ചെക്ക്-ഇൻ",
+    ask: "എന്തെങ്കിലും ചോദിക്കൂ",
+    schedule: "ഈ ദിവസങ്ങളിൽ മോംചെക്ക് നിങ്ങളുടെ വിവരം അന്വേഷിക്കും",
+    remind: "എന്റെ ഫോണിൽ ഓർമ്മപ്പെടുത്തലുകൾ ചേർക്കൂ",
+    today: "ഇന്ന്",
   },
   "gu-IN": {
     intro: "તમારી કે બાળકની તબિયત વિશે કોઈ ચિંતા? મૉમચેકને તમારી ભાષામાં પૂછો.",
@@ -92,6 +137,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "મૉમચેક વિચારી રહ્યું છે…",
     told: "{asha} બેનને જણાવી દીધું છે, તેઓ જલ્દી તમારો સંપર્ક કરશે.",
     emergency: "કટોકટીમાં 108 પર ફોન કરો, એમ્બ્યુલન્સ મફત છે",
+    checkin: "આજનું ચેક-ઇન",
+    ask: "કંઈક પૂછો",
+    schedule: "આ દિવસોમાં મૉમચેક તમારી ખબર પૂછશે",
+    remind: "મારા ફોનમાં રિમાઇન્ડર ઉમેરો",
+    today: "આજે",
   },
   "pa-IN": {
     intro: "ਆਪਣੀ ਜਾਂ ਬੱਚੇ ਦੀ ਸਿਹਤ ਬਾਰੇ ਕੋਈ ਚਿੰਤਾ? ਮੌਮਚੈਕ ਨੂੰ ਆਪਣੀ ਭਾਸ਼ਾ ਵਿੱਚ ਪੁੱਛੋ।",
@@ -101,6 +151,11 @@ export const ASK_STRINGS: Record<LanguageCode, AskStrings> = {
     thinking: "ਮੌਮਚੈਕ ਸੋਚ ਰਿਹਾ ਹੈ…",
     told: "{asha} ਦੀਦੀ ਨੂੰ ਦੱਸ ਦਿੱਤਾ ਗਿਆ ਹੈ, ਉਹ ਜਲਦੀ ਤੁਹਾਡੇ ਨਾਲ ਸੰਪਰਕ ਕਰਨਗੇ।",
     emergency: "ਐਮਰਜੈਂਸੀ ਵਿੱਚ 108 ਤੇ ਫ਼ੋਨ ਕਰੋ, ਐਂਬੂਲੈਂਸ ਮੁਫ਼ਤ ਹੈ",
+    checkin: "ਅੱਜ ਦਾ ਚੈੱਕ-ਇਨ",
+    ask: "ਕੁਝ ਪੁੱਛੋ",
+    schedule: "ਇਨ੍ਹਾਂ ਦਿਨਾਂ ਵਿੱਚ ਮੌਮਚੈਕ ਤੁਹਾਡਾ ਹਾਲ ਪੁੱਛੇਗਾ",
+    remind: "ਮੇਰੇ ਫ਼ੋਨ ਵਿੱਚ ਯਾਦ-ਦਹਾਨੀਆਂ ਜੋੜੋ",
+    today: "ਅੱਜ",
   },
 };
 

@@ -147,6 +147,7 @@ export function BeneficiaryDetailPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-semibold tracking-tight text-ink">{data.name}</h1>
                 <RiskBadge risk={data.risk} />
+                {data.source === "self" && <Badge tone="rose">Joined on her own</Badge>}
               </div>
               <p className="mt-1 text-sm text-muted">
                 {stageLabel(data)}
@@ -166,9 +167,13 @@ export function BeneficiaryDetailPage() {
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <InfoItem icon={<Phone className="size-4" />} label="Mobile">
-              <a href={`tel:+91${data.phone}`} className="hover:underline" title="Call her yourself from your own phone">
-                +91 {data.phone}
-              </a>
+              {data.phone ? (
+                <a href={`tel:+91${data.phone}`} className="hover:underline" title="Call her yourself from your own phone">
+                  +91 {data.phone}
+                </a>
+              ) : (
+                <span className="font-normal text-muted">Joined online, no number</span>
+              )}
             </InfoItem>
             <InfoItem icon={<Languages className="size-4" />} label="Language">
               {languageLabel(data.language, languages)}

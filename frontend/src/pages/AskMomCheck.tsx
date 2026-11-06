@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
-import { Ambulance, BellRing, Mic, PhoneOff, Square } from "lucide-react";
+import { Ambulance, BellRing, CalendarPlus, CalendarHeart, MessageCircleQuestion, Mic, PhoneOff, Square } from "lucide-react";
 import { api } from "../api/client";
 import type { AskInfo } from "../api/types";
 import { playClip, stopClip, unlockAudio } from "../audio/player";
@@ -46,14 +46,14 @@ export function AskMomCheckPage() {
     await playClip(audio).catch(() => undefined);
   };
 
-  const start = async () => {
+  const start = async (mode: "ask" | "checkin") => {
     unlockAudio();
     setError(null);
     setTold(false);
     setLines([]);
     setPhase("starting");
     try {
-      const r = await api.askStart(token);
+      const r = await api.askStart(token, mode);
       setCallId(r.call_id);
       setLines([{ who: "momcheck", text: r.reply_text }]);
       await say(r.reply_audio);
@@ -150,6 +150,34 @@ export function AskMomCheckPage() {
         </div>
       )}
 
+      {!inCall && lines.length === 0 && info.schedule.length > 0 && (
+        <div className="mx-5 mt-5 rounded-2xl bg-white/90 p-4 shadow-sm ring-1 ring-line">
+          <p className="flex items-center gap-2 text-[15px] font-semibold text-ink">
+            <CalendarHeart className="size-5 text-blush-600" /> {t.schedule}
+          </p>
+          <ul className="mt-2 space-y-1">
+            {info.schedule.slice(0, 4).map((c, i) => {
+              const isToday = c.date === new Date().toLocaleDateString("en-CA");
+              return (
+                <li key={c.date} className={cx("flex items-center justify-between rounded-lg px-2 py-1.5 text-[15px]", i === 0 && "bg-blush-50")}>
+                  <span className="text-ink">
+                    {isToday ? t.today : new Date(`${c.date}T00:00:00`).toLocaleDateString(info.language, { weekday: "short", day: "numeric", month: "short" })}
+                  </span>
+                  <span className="text-xs text-muted">{c.label}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <a
+            href={api.askCalendarUrl(token)}
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blush-50 px-3 py-2.5 text-sm font-semibold text-blush-600 ring-1 ring-blush-200"
+          >
+            <CalendarPlus className="size-4" /> {t.remind}
+          </a>
+          <p className="mt-2 text-center text-[11px] text-muted">On those days your phone reminds you. Tap it and MomCheck checks on you. Keep this page: it is your link.</p>
+        </div>
+      )}
+
       <div ref={scrollRef} className="mx-5 mt-4 flex-1 space-y-2.5 overflow-y-auto">
         {lines.map((l, i) => (
           <div key={i} className={cx("flex", l.who === "her" ? "justify-end" : "justify-start")}>
@@ -168,12 +196,22 @@ export function AskMomCheckPage() {
 
       <div className="flex flex-col items-center gap-3 px-5 pb-4 pt-5">
         {!inCall ? (
-          <button
-            onClick={() => void start()}
-            className="flex h-16 w-full max-w-sm items-center justify-center gap-3 rounded-full bg-brand-700 text-lg font-semibold text-white shadow-xl active:scale-[0.98]"
-          >
-            <Mic className="size-6" /> {t.start}
-          </button>
+          <div className="flex w-full max-w-sm flex-col gap-2.5">
+            <button
+              onClick={() => void start("checkin")}
+              disabled={phase === "starting"}
+              className="flex h-16 w-full items-center justify-center gap-3 rounded-full bg-brand-700 text-lg font-semibold text-white shadow-xl active:scale-[0.98] disabled:opacity-60"
+            >
+              {phase === "starting" ? <Spinner className="size-6 text-white" /> : <Mic className="size-6" />} {t.checkin}
+            </button>
+            <button
+              onClick={() => void start("ask")}
+              disabled={phase === "starting"}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white text-base font-semibold text-brand-800 ring-1 ring-brand-200 active:scale-[0.98] disabled:opacity-60"
+            >
+              <MessageCircleQuestion className="size-5" /> {t.ask}
+            </button>
+          </div>
         ) : (
           <>
             <button

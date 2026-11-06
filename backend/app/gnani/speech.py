@@ -12,6 +12,7 @@ from typing import Any
 
 import httpx
 
+from .. import usage
 from ..config import get_settings
 
 log = logging.getLogger("gnani.speech")
@@ -32,6 +33,20 @@ def _headers() -> dict[str, str]:
     if not key:
         raise SpeechError("GNANI_SPEECH_API_KEY is not set")
     return {"X-API-Key-ID": key}
+
+
+def _audio_seconds(audio: bytes) -> float:
+    """Length of a WAV clip; for other formats a rough guess from the size."""
+    import io
+    import wave
+
+    try:
+        with wave.open(io.BytesIO(audio)) as w:
+            bytes_per_sec = w.getframerate() * w.getsampwidth() * w.getnchannels()
+            # Some WAVs (e.g. streamed TTS) carry a placeholder frame count, so trust the data size instead
+            return max(0.0, (len(audio) - 44) / float(bytes_per_sec))
+    except Exception:  # noqa: BLE001
+        return len(audio) / 16000
 
 
 def _error_message(resp: httpx.Response) -> str:
@@ -69,6 +84,8 @@ async def transcribe(
             data["keyterms"] = json.dumps([k for k in keyterms if k][:200], ensure_ascii=False)
         if topic:
             data["topic"] = topic[:1600]
+    usage.check("stt_seconds")
+    seconds = _audio_seconds(audio)
     started = time.perf_counter()
     try:
         async with httpx.AsyncClient(timeout=60) as client:
@@ -83,6 +100,8 @@ async def transcribe(
     if resp.status_code != 200:
         raise SpeechError(f"STT failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
     body = resp.json()
+    usage.record("stt_seconds", seconds)
+    usage.record("stt_requests")
     log.info("STT %s %.2fs request_id=%s", language_code, time.perf_counter() - started, body.get("request_id"))
     return body
 
@@ -117,6 +136,7 @@ async def synthesize(
             "container": container,
         },
     }
+    usage.check("tts_chars")
     started = time.perf_counter()
     async with _tts_lock:
         try:
@@ -128,6 +148,8 @@ async def synthesize(
             raise SpeechError(f"TTS request failed: {type(exc).__name__}: {exc}") from exc
     if resp.status_code != 200:
         raise SpeechError(f"TTS failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
+    usage.record("tts_chars", len(text))
+    usage.record("tts_requests")
     log.info("TTS %s %d chars %.2fs", language, len(text), time.perf_counter() - started)
     return resp.content
 
@@ -139,6 +161,7 @@ VC_MODEL = "vachana-vc-v1"
 async def voice_embedding(audio: bytes, filename: str = "voice.wav") -> dict[str, Any]:
     """Turn 5-30 s of clean speech into a speaker embedding ({embedding, shape, dtype}). Done once per voice."""
     s = get_settings()
+    usage.check("tts_chars")
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.post(
@@ -150,6 +173,7 @@ async def voice_embedding(audio: bytes, filename: str = "voice.wav") -> dict[str
         raise SpeechError(f"Voice cloning request failed: {type(exc).__name__}: {exc}") from exc
     if resp.status_code != 200:
         raise SpeechError(f"Voice cloning failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
+    usage.record("vc_embeddings")
     emb = (resp.json().get("data") or {}).get("voice_clone_embedding")
     if not isinstance(emb, dict) or not emb.get("embedding"):
         raise SpeechError("Voice cloning returned no embedding")
@@ -165,6 +189,7 @@ async def synthesize_cloned(text: str, embedding: dict[str, Any], *, sample_rate
         "audio_config": {"sample_rate": sample_rate, "num_channels": 1, "sample_width": 2, "encoding": "linear_pcm", "container": container},
         "speaker_embedding": embedding,
     }
+    usage.check("tts_chars")
     started = time.perf_counter()
     async with _tts_lock:
         try:
@@ -174,5 +199,7 @@ async def synthesize_cloned(text: str, embedding: dict[str, Any], *, sample_rate
             raise SpeechError(f"Cloned TTS request failed: {type(exc).__name__}: {exc}") from exc
     if resp.status_code != 200:
         raise SpeechError(f"Cloned TTS failed ({resp.status_code}): {_error_message(resp)}", resp.status_code, resp.text)
+    usage.record("tts_chars", len(text))
+    usage.record("vc_requests")
     log.info("VC TTS %d chars %.2fs", len(text), time.perf_counter() - started)
     return resp.content

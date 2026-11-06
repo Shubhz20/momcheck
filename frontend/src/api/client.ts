@@ -10,6 +10,7 @@ import type {
   DemoAccount,
   Facilities,
   InterpretTurn,
+  JoinInput,
   Language,
   LanguageCode,
   Me,
@@ -19,6 +20,7 @@ import type {
   SignupInput,
   StartCallResponse,
   TurnReply,
+  UsageReport,
 } from "./types";
 
 export const SIGNED_OUT_EVENT = "momcheck:signed-out";
@@ -151,7 +153,11 @@ export const api = {
 
   // Public: the mother's own page (no sign-in; the token in her link is the key)
   askInfo: (token: string) => request<AskInfo>("GET", `/ask/${token}`),
-  askStart: (token: string) => request<{ call_id: number; reply_text: string; reply_audio: string }>("POST", `/ask/${token}/start`),
+  askStart: (token: string, mode: "ask" | "checkin" = "ask") =>
+    request<{ call_id: number; reply_text: string; reply_audio: string }>("POST", `/ask/${token}/start${qs({ mode })}`),
+  askCalendarUrl: (token: string) => `/api/ask/${token}/calendar.ics`,
+  join: (input: JoinInput) => request<{ token: string; path: string }>("POST", "/join", input),
+  usage: () => request<UsageReport>("GET", "/usage"),
   askTurn: (token: string, callId: number, audio: Blob) => {
     const fd = new FormData();
     fd.append("audio", audio, "turn.wav");

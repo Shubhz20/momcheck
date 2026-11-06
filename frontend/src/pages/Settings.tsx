@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { AudioLines, Building2, Check, Hospital, Mic, Play, ShieldCheck, Square, Trash2, UserRound } from "lucide-react";
+import { AudioLines, Building2, Check, Gauge, Hospital, Mic, Play, ShieldCheck, Square, Trash2, UserRound } from "lucide-react";
 import { api } from "../api/client";
-import type { Facilities, LanguageCode } from "../api/types";
+import type { Facilities, LanguageCode, UsageReport } from "../api/types";
 import { playClip, stopClip, unlockAudio } from "../audio/player";
 import { useToast } from "../components/Toast";
 import { Button, Card, ErrorBox, Field, PageHeader, SectionHeader, Spinner, cx, inputClass } from "../components/ui";
@@ -17,6 +17,7 @@ export function SettingsPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <VoiceCard />
         <FacilitiesCard />
+        <UsageCard />
       </div>
     </>
   );
@@ -233,6 +234,65 @@ function FacilitiesCard() {
         <Button onClick={() => void save()} loading={saving} icon={<Check className="size-4" />}>
           Save
         </Button>
+      </Card>
+    </section>
+  );
+}
+
+/** The owner's view of the paid APIs: today's use against the daily caps that protect the credits. */
+function UsageCard() {
+  const me = useMe();
+  const [data, setData] = useState<UsageReport | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    if (me.is_demo) return;
+    api
+      .usage()
+      .then(setData)
+      .catch((e: Error) => setError(e.message));
+  }, [me.is_demo]);
+  if (me.is_demo) return null;
+
+  const rows: { label: string; used: number; cap: number; unit: (n: number) => string }[] = data
+    ? [
+        { label: "Prisma speech-to-text", used: data.today.stt_seconds ?? 0, cap: data.caps.stt_seconds, unit: (n) => `${(n / 60).toFixed(1)} min` },
+        { label: "Timbre speech + voice cloning", used: data.today.tts_chars ?? 0, cap: data.caps.tts_chars, unit: (n) => `${Math.round(n).toLocaleString("en-IN")} chars` },
+        { label: "Gemini requests", used: data.today.llm_requests ?? 0, cap: data.caps.llm_requests, unit: (n) => Math.round(n).toLocaleString("en-IN") },
+      ]
+    : [];
+
+  return (
+    <section className="lg:col-span-2">
+      <SectionHeader title="API use today" subtitle="Only you see this. Caps stop the public demo from using up your credits." />
+      <Card className="p-5">
+        {error && <ErrorBox error={error} />}
+        {!data && !error && <Spinner className="size-5" />}
+        {data && (
+          <div className="grid gap-4 md:grid-cols-3">
+            {rows.map((r) => {
+              const share = r.cap > 0 ? Math.min(1, r.used / r.cap) : 0;
+              const tone = share >= 0.9 ? "bg-red-600" : share >= 0.6 ? "bg-amber-500" : "bg-brand-600";
+              const track = share >= 0.9 ? "bg-red-100" : share >= 0.6 ? "bg-amber-100" : "bg-brand-100";
+              return (
+                <div key={r.label}>
+                  <p className="flex items-center gap-1.5 text-sm font-medium text-ink">
+                    <Gauge className="size-4 text-brand-700" /> {r.label}
+                  </p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums text-ink">
+                    {r.unit(r.used)} <span className="text-sm font-normal text-muted">of {r.cap > 0 ? r.unit(r.cap) : "no cap"}</span>
+                  </p>
+                  <div className={cx("mt-1.5 h-2 overflow-hidden rounded-full", track)}>
+                    <div className={cx("h-full rounded-full", tone)} style={{ width: `${Math.max(2, share * 100)}%` }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <p className="mt-4 text-xs text-muted">
+          Your remaining Gnani credits are on the Usage page at app.gnani.ai/voice. Change the caps with DAILY_STT_SECONDS, DAILY_TTS_CHARS and
+          DAILY_LLM_REQUESTS on Render. Demo visitors also get a daily allowance each.
+        </p>
       </Card>
     </section>
   );

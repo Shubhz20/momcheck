@@ -130,6 +130,7 @@ def beneficiary_out(session: Session, b: Beneficiary) -> dict[str, Any]:
         "next_visit_date": b.next_visit_date.isoformat() if b.next_visit_date else None,
         "next_visit_type": b.next_visit_type,
         "notes": b.notes,
+        "source": b.source or "asha",
         "risk": risk,
         "open_alerts": open_alerts,
         "last_call": call_out(last_call, b) if last_call else None,

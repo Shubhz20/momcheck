@@ -82,6 +82,7 @@ export interface Beneficiary {
   next_visit_date: string | null;
   next_visit_type: string | null;
   notes: string;
+  source: "asha" | "self"; // self = she joined on the website herself
   risk: Risk;
   open_alerts: number;
   last_call: Call | null;
@@ -110,7 +111,7 @@ export interface CheckItem {
 
 // Phone calls (Twilio) also go through "ringing", and can end as "not_answered" or "failed".
 export type CallStatus = "ringing" | "in_progress" | "completed" | "abandoned" | "not_answered" | "failed";
-export type CallChannel = "browser" | "phone" | "ask" | "interpreter";
+export type CallChannel = "browser" | "phone" | "ask" | "checkin" | "interpreter";
 export type CallOutcome = "DANGER_SIGN" | "ROUTINE" | "CALLBACK" | "NOT_REACHABLE";
 
 /** A follow-up call is a live voice conversation: Prisma STT → Gemini → Timbre TTS. */
@@ -182,6 +183,26 @@ export interface AskInfo {
   category: Category;
   asha_name: string;
   asha_voice: boolean;
+  self_registered: boolean;
+  weeks_pregnant: number | null;
+  days_since_delivery: number | null;
+  schedule: { date: string; label: string; week: number | null; day: number | null }[]; // her check-ins
+}
+
+export interface JoinInput {
+  name: string;
+  language: LanguageCode;
+  category: Category;
+  weeks?: number;
+  days_since_birth?: number;
+  village?: string;
+}
+
+/** The owner's view of Gnani / Gemini use: today's totals against the daily caps. */
+export interface UsageReport {
+  today: Record<string, number>;
+  caps: { stt_seconds: number; tts_chars: number; llm_requests: number };
+  days: Record<string, Record<string, number>>;
 }
 
 export interface StartCallResponse {

@@ -53,6 +53,11 @@ class Settings:
         self.public_base_url = (_env("PUBLIC_BASE_URL") or _env("RENDER_EXTERNAL_URL")).rstrip("/")
         self.max_turns = int(_env("MAX_CALL_TURNS", "14"))
 
+        # Daily caps that protect the Gnani credits and Gemini quota when the public demo gets traffic (0 = no cap)
+        self.daily_stt_seconds = float(_env("DAILY_STT_SECONDS", "7200"))  # 2 hours of her speech
+        self.daily_tts_chars = float(_env("DAILY_TTS_CHARS", "150000"))
+        self.daily_llm_requests = float(_env("DAILY_LLM_REQUESTS", "2500"))
+
     @property
     def phone_calls_configured(self) -> bool:
         return bool(self.twilio_account_sid and self.twilio_auth_token and self.twilio_from_number)

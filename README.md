@@ -13,6 +13,7 @@ An ASHA worker looks after every pregnant woman and newborn in her village. Foll
 - **In the ASHA's own voice.** The ASHA reads a short consent passage once; **Gnani voice cloning** then speaks to her women in her voice, in any of the 10 languages. MomCheck always says it is an automated assistant.
 - **Interpreter for home visits.** The ASHA speaks her language; the mother hears hers, in the ASHA's voice, and her reply comes back translated. Danger signs still raise alerts.
 - **Ask MomCheck.** Each mother gets a personal link or QR code to talk to MomCheck whenever she's worried. No app or sign-in, and her ASHA is alerted to danger signs.
+- **Mothers can join on their own** (`/join`, no phone number). From her stage MomCheck makes her check-in schedule: every two weeks in pregnancy, weekly from week 34, and the newborn-care visit days after birth. One tap adds the check-ins to her phone's calendar, and on the day the reminder opens MomCheck for that check-in.
 - **For the ASHA:** spoken visit notes, a spoken daily briefing (kept day by day), a map of her women by risk, and a 7-day impact panel.
 
 > **Safety:** MomCheck screens and escalates. It never diagnoses or prescribes, and every danger sign goes to a human health worker. All names and numbers in this project are synthetic.
@@ -64,6 +65,9 @@ The call screen has a **phone-line mode**. It downsamples the microphone audio t
 | + street noise 0 dB SNR | 28.3% | 83% |
 
 Full results in [`eval/REPORT.md`](eval/REPORT.md) and on the app's "How well it hears" page.
+
+### Protecting the credits
+Every Gnani and Gemini request is metered per day. Daily caps (`DAILY_STT_SECONDS`, default 2 hours of speech; `DAILY_TTS_CHARS`, default 150,000; `DAILY_LLM_REQUESTS`, default 2,500) stop new requests with a friendly message once reached. Each visitor to the demo accounts and public pages also gets a daily allowance, and repeated audio (greetings, briefings) is synthesised once. An ASHA's own account shows today's use under **My voice & settings**.
 
 ## Run locally
 

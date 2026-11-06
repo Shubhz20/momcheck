@@ -56,6 +56,12 @@ export function ChannelBadge({ call }: { call: Pick<Call, "channel" | "phone_lin
         She asked MomCheck
       </Badge>
     );
+  if (call.channel === "checkin")
+    return (
+      <Badge tone="rose" icon={<MessageCircleHeart className="size-3" />}>
+        Her check-in (own phone)
+      </Badge>
+    );
   if (call.channel === "interpreter")
     return (
       <Badge tone="blue" icon={<Languages className="size-3" />}>

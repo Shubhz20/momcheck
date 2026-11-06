@@ -14,9 +14,11 @@ transcript is reviewed again to set the outcome and an English summary.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import logging
 import time
+from collections import OrderedDict
 from typing import Any
 
 from sqlmodel import Session, select
@@ -105,9 +107,24 @@ def _stt_languages(lang: str) -> str:
     return ",".join(langs)
 
 
+# Same words, same voice -> same audio. Greetings repeat on every demo call, so they are synthesised once.
+_audio_cache: "OrderedDict[str, tuple[str, bool]]" = OrderedDict()
+_AUDIO_CACHE_SIZE = 150
+
+
+def _cache_key(text: str, language: str, rate: int, voice: dict | None) -> str:
+    v = hashlib.sha1(voice["embedding"].encode()).hexdigest() if voice else "timbre"
+    return hashlib.sha1(f"{text}|{language}|{rate}|{v}".encode()).hexdigest()
+
+
 async def speak(text: str, language: str, phone_line: bool, voice: dict | None = None) -> tuple[str, int, bool]:
     """Returns (MP3 data URL, ms, spoke_in_cloned_voice). Falls back to Timbre if cloning fails."""
     started = time.perf_counter()
+    key = _cache_key(text, language, 8000 if phone_line else 24000, voice)
+    if key in _audio_cache:
+        _audio_cache.move_to_end(key)
+        url, cloned = _audio_cache[key]
+        return url, int((time.perf_counter() - started) * 1000), cloned
     rate = 8000 if phone_line else 24000
     audio, cloned = None, False
     if voice:
@@ -119,14 +136,23 @@ async def speak(text: str, language: str, phone_line: bool, voice: dict | None =
     if audio is None:
         audio = await speech.synthesize(text, language, sample_rate=rate, container="mp3")
     ms = int((time.perf_counter() - started) * 1000)
-    return "data:audio/mpeg;base64," + base64.b64encode(audio).decode(), ms, cloned
+    url = "data:audio/mpeg;base64," + base64.b64encode(audio).decode()
+    if cloned or not voice:  # don't cache a fallback as if it were her voice
+        _audio_cache[key] = (url, cloned)
+        if len(_audio_cache) > _AUDIO_CACHE_SIZE:
+            _audio_cache.popitem(last=False)
+    return url, ms, cloned
 
 
 # ---------------------------------------------------------------- alerts
 def _upsert_alert(session: Session, call: Call, signs: list[str]) -> bool:
     """Create or update the alert for this call. Returns True if a new alert was created."""
     alert = session.exec(select(Alert).where(Alert.call_id == call.id)).first()
-    where = {"ask": "Reported when she asked MomCheck", "interpreter": "Reported during a home visit (interpreter)"}.get(
+    where = {
+        "ask": "Reported when she asked MomCheck",
+        "checkin": "Reported on her scheduled check-in",
+        "interpreter": "Reported during a home visit (interpreter)",
+    }.get(
         call.channel, "Reported on a follow-up call"
     )
     if alert is None:
@@ -187,7 +213,7 @@ def live_state(call: Call, b: Beneficiary) -> dict[str, Any]:
 async def start_call(session: Session, b: Beneficiary, phone_line: bool = True, channel: str = "browser") -> tuple[Call, dict[str, Any]]:
     """Start a follow-up call (channel browser) or one she started from her link (channel ask)."""
     voice = voice_for(session, b)
-    name = b.name.split()[0] if channel == "ask" else b.name
+    name = b.name.split()[0] if channel in ("ask", "checkin") else b.name
     greeting = prompts.greeting_for(b.language, name, own_voice=bool(voice), mode="ask" if channel == "ask" else "followup")
     call = Call(
         beneficiary_id=b.id,
@@ -252,7 +278,13 @@ async def respond(session: Session, call: Call, audio: bytes | None, filename: s
 
     # 2. Decide what to say (Gemini), with the full conversation so far
     history: list[tuple[str, str]] = [
-        ("user", "(She opened her Ask MomCheck link and tapped Talk.)" if call.channel == "ask" else "(The call has connected.)")
+        (
+            "user",
+            {
+                "ask": "(She opened her Ask MomCheck link and tapped Talk.)",
+                "checkin": "(She opened her MomCheck link for her scheduled check-in. She is the woman herself.)",
+            }.get(call.channel, "(The call has connected.)"),
+        )
     ]
     for t in call.transcript:
         if t["role"] == "assistant":

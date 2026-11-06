@@ -10,6 +10,7 @@ import logging
 import re
 from typing import Any
 
+from . import usage
 from .config import get_settings
 
 log = logging.getLogger("llm")
@@ -45,7 +46,9 @@ async def _generate(contents, config):
     last: Exception | None = None
     for model in models:
         try:
-            return await client.aio.models.generate_content(model=model, contents=contents, config=config)
+            resp = await client.aio.models.generate_content(model=model, contents=contents, config=config)
+            usage.record("llm_requests")
+            return resp
         except Exception as exc:
             if not any(code in str(exc) for code in _RETRYABLE):
                 raise
@@ -69,6 +72,8 @@ async def chat_json(system: str, history: list[tuple[str, str]], *, temperature:
     """Multi-turn chat. history = [(role, text)] with role "user" or "model". Returns parsed JSON."""
     from google.genai import types
 
+    usage.check("llm_requests")
+
     contents = [types.Content(role=role, parts=[types.Part(text=text)]) for role, text in history]
     try:
         resp = await _generate(
@@ -87,6 +92,8 @@ async def chat_json(system: str, history: list[tuple[str, str]], *, temperature:
 
 async def complete_json(prompt: str, *, temperature: float = 0.2) -> dict[str, Any]:
     from google.genai import types
+
+    usage.check("llm_requests")
 
     last_error: Exception | None = None
     for attempt in range(2):

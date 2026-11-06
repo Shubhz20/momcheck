@@ -14,6 +14,7 @@ import { LoginPage } from "./pages/Login";
 import { NotFoundPage } from "./pages/NotFound";
 import { PhoneCallPage } from "./pages/PhoneCall";
 import { AskMomCheckPage } from "./pages/AskMomCheck";
+import { JoinPage } from "./pages/Join";
 import { InterpreterPage } from "./pages/Interpreter";
 import { SettingsPage } from "./pages/Settings";
 import { QualityPage } from "./pages/Quality";
@@ -59,6 +60,7 @@ export default function App() {
               <Routes>
                 {/* The mother's own page: public, her link's token is the key */}
                 <Route path="/m/:token" element={<AskMomCheckPage />} />
+                <Route path="/join" element={<JoinPage />} />
                 <Route path="*" element={<SignedInRoutes />} />
               </Routes>
             </ErrorBoundary>

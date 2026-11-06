@@ -163,3 +163,25 @@ def next_hbnc_day(days_since_delivery: int | None) -> int | None:
     if days_since_delivery is None:
         return None
     return next((d for d in HBNC_DAYS if d >= days_since_delivery), None)
+
+
+def checkin_schedule(category: str, edd, delivery_date, today, count: int = 6) -> list[dict]:
+    """When MomCheck checks on her: every two weeks in pregnancy, weekly from week 34 (late pregnancy is
+    riskiest), and on the HBNC home-visit days after birth."""
+    from datetime import timedelta
+
+    out: list[dict] = []
+    if category == "postnatal" and delivery_date:
+        for d in HBNC_DAYS:
+            day = delivery_date + timedelta(days=d)
+            if day >= today:
+                out.append({"date": day.isoformat(), "label": f"Day {d} after birth", "week": None, "day": d})
+        return out[:count]
+    if not edd:
+        return []
+    day = today
+    while len(out) < count and day <= edd + timedelta(days=7):
+        week = max(1, 40 - (edd - day).days // 7)
+        out.append({"date": day.isoformat(), "label": f"Week {week}", "week": week, "day": None})
+        day += timedelta(days=7 if week >= 34 else 14)
+    return out

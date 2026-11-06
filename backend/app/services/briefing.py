@@ -161,9 +161,18 @@ def _concat_wavs(parts: list[bytes]) -> bytes:
     return buf.getvalue()
 
 
+_audio_cache: dict[tuple[str, str], bytes] = {}
+
+
 async def speak(text: str, language: str) -> bytes:
-    parts = [await speech.synthesize(chunk, language) for chunk in _chunks(text)]
-    return parts[0] if len(parts) == 1 else _concat_wavs(parts)
+    """The briefing as one WAV. The same text is only synthesised once."""
+    key = (text, language)
+    if key not in _audio_cache:
+        parts = [await speech.synthesize(chunk, language) for chunk in _chunks(text)]
+        if len(_audio_cache) >= 30:
+            _audio_cache.pop(next(iter(_audio_cache)))
+        _audio_cache[key] = parts[0] if len(parts) == 1 else _concat_wavs(parts)
+    return _audio_cache[key]
 
 
 async def briefing_audio(session: Session, asha: Asha, language: str) -> bytes:

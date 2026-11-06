@@ -13,12 +13,12 @@ from datetime import date, datetime, timedelta
 from typing import Any, Optional
 
 from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 from sqlmodel import Session, func, select
 
-from . import auth, prompts, telephony
+from . import auth, prompts, protocol, telephony, usage
 from .auth import current_asha
 from .config import ROOT_DIR, get_settings
 from .db import get_session, init_db
@@ -30,7 +30,7 @@ from .models import Alert, Asha, Beneficiary, Briefing, Call, Note, utcnow
 from .seed import delete_women, reset_demo, seed_sample
 from .services import briefing, calls, notes
 from .services.briefing import _start_of_today_utc
-from .services.serialize import alert_out, beneficiary_out, call_out, iso, note_out, today
+from .services.serialize import alert_out, beneficiary_out, call_out, days_since_delivery, iso, note_out, today, weeks_pregnant
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -177,6 +177,12 @@ def _names(session: Session, asha: Asha) -> dict[int, Beneficiary]:
 def _phone_calls_ready() -> bool:
     s = get_settings()
     return s.phone_calls_enabled and s.phone_calls_configured and s.public_base_url.startswith("https://")
+
+
+def _demo_limit(request: Request, asha: Asha, bucket: str, per_day: int) -> None:
+    """Visitors to the shared demo accounts get a daily allowance; an ASHA's own account doesn't."""
+    if asha.is_demo:
+        usage.limit(request, bucket, per_day)
 
 
 def _me(asha: Asha) -> dict[str, Any]:
@@ -462,11 +468,13 @@ def delete_beneficiary(bid: int, asha: Asha = Depends(current_asha), session: Se
 # ---- calls ------------------------------------------------------------------
 @app.post("/api/beneficiaries/{bid}/call")
 async def start_call(
+    request: Request,
     bid: int,
     phone_line: bool = Query(True),
     asha: Asha = Depends(current_asha),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
+    _demo_limit(request, asha, "conversation", 25)
     b = _get_beneficiary(session, bid, asha)
     try:
         call, reply = await calls.start_call(session, b, phone_line=phone_line)
@@ -578,11 +586,13 @@ def ack_alert(aid: int, asha: Asha = Depends(current_asha), session: Session = D
 # ---- voice notes ------------------------------------------------------------
 @app.post("/api/notes/draft")
 async def note_draft(
+    request: Request,
     audio: UploadFile = File(...),
     language: str = Form(""),
     asha: Asha = Depends(current_asha),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
+    _demo_limit(request, asha, "note", 20)
     data = await audio.read()
     if not data:
         raise HTTPException(400, "Empty audio")
@@ -662,7 +672,8 @@ def list_briefings(
 
 
 @app.get("/api/briefings/{brid}/audio")
-async def saved_briefing_audio(brid: int, asha: Asha = Depends(current_asha), session: Session = Depends(get_session)) -> Response:
+async def saved_briefing_audio(request: Request, brid: int, asha: Asha = Depends(current_asha), session: Session = Depends(get_session)) -> Response:
+    _demo_limit(request, asha, "briefing", 15)
     b = session.get(Briefing, brid)
     if not b or b.asha_id != asha.id:
         raise HTTPException(404, "Briefing not found")
@@ -675,8 +686,9 @@ async def saved_briefing_audio(brid: int, asha: Asha = Depends(current_asha), se
 
 @app.get("/api/briefing/audio")
 async def get_briefing_audio(
-    language: str = "", asha: Asha = Depends(current_asha), session: Session = Depends(get_session)
+    request: Request, language: str = "", asha: Asha = Depends(current_asha), session: Session = Depends(get_session)
 ) -> Response:
+    _demo_limit(request, asha, "briefing", 15)
     language = language or asha.language
     if language not in LANGUAGES:
         raise HTTPException(400, f"Unsupported language {language}")
@@ -714,12 +726,14 @@ def voice_script(asha: Asha = Depends(current_asha)) -> dict[str, str]:
 
 @app.post("/api/me/voice")
 async def set_voice(
+    request: Request,
     audio: UploadFile = File(...),
     consent: str = Form("false"),
     asha: Asha = Depends(current_asha),
     session: Session = Depends(get_session),
 ) -> dict[str, Any]:
     """She reads the consent script aloud; the recording becomes her voice for calls."""
+    _demo_limit(request, asha, "voice", 3)
     if consent.lower() not in ("1", "true", "yes", "on"):
         raise HTTPException(400, "Please tick the consent box first.")
     data = await audio.read()
@@ -761,7 +775,8 @@ def delete_voice(asha: Asha = Depends(current_asha), session: Session = Depends(
 
 
 @app.post("/api/me/voice/preview")
-async def voice_preview(language: str = Query("hi-IN"), asha: Asha = Depends(current_asha)) -> dict[str, str]:
+async def voice_preview(request: Request, language: str = Query("hi-IN"), asha: Asha = Depends(current_asha)) -> dict[str, str]:
+    _demo_limit(request, asha, "preview", 15)
     if not asha.voice_embedding:
         raise HTTPException(404, "Record your voice first.")
     if language not in LANGUAGES:
@@ -822,7 +837,7 @@ def _ask_woman(session: Session, token: str) -> Beneficiary:
 
 def _ask_call(session: Session, b: Beneficiary, cid: int) -> Call:
     c = session.get(Call, cid)
-    if c is None or c.beneficiary_id != b.id or c.channel != "ask":
+    if c is None or c.beneficiary_id != b.id or c.channel not in ("ask", "checkin"):
         raise HTTPException(404, "Conversation not found")
     return c
 
@@ -838,21 +853,27 @@ def ask_info(token: str, session: Session = Depends(get_session)) -> dict[str, A
         "category": b.category,
         "asha_name": asha.name if asha else "",
         "asha_voice": bool(asha and asha.voice_embedding and asha.use_own_voice),
+        "self_registered": b.source == "self",
+        "weeks_pregnant": weeks_pregnant(b),
+        "days_since_delivery": days_since_delivery(b),
+        "schedule": protocol.checkin_schedule(b.category, b.edd, b.delivery_date, today()),
     }
 
 
 @app.post("/api/ask/{token}/start")
-async def ask_start(token: str, session: Session = Depends(get_session)) -> dict[str, Any]:
+async def ask_start(request: Request, token: str, mode: str = "ask", session: Session = Depends(get_session)) -> dict[str, Any]:
+    """mode=ask: she has a question. mode=checkin: her scheduled check-in (MomCheck goes through the checklist)."""
+    usage.limit(request, "conversation", 25)
     b = _ask_woman(session, token)
     recent = session.exec(
         select(func.count()).select_from(Call).where(
-            Call.beneficiary_id == b.id, Call.channel == "ask", Call.triggered_at >= utcnow() - timedelta(days=1)
+            Call.beneficiary_id == b.id, Call.channel.in_(["ask", "checkin"]), Call.triggered_at >= utcnow() - timedelta(days=1)
         )
     ).one()
     if recent >= ASK_SESSIONS_PER_DAY:
         raise HTTPException(429, "You have talked to MomCheck many times today. Please call your ASHA, or 108 in an emergency.")
     try:
-        call, reply = await calls.start_call(session, b, phone_line=False, channel="ask")
+        call, reply = await calls.start_call(session, b, phone_line=False, channel="checkin" if mode == "checkin" else "ask")
     except SpeechError as exc:
         raise HTTPException(502, f"Text-to-speech failed: {exc}") from exc
     return {"call_id": call.id, "reply_text": reply["reply_text"], "reply_audio": reply["reply_audio"]}
@@ -881,9 +902,97 @@ async def ask_end(token: str, cid: int, session: Session = Depends(get_session))
     return {"status": call.status, "asha_told": bool(call.danger_signs)}
 
 
+
+@app.get("/api/ask/{token}/calendar.ics")
+def ask_calendar(token: str, request: Request, session: Session = Depends(get_session)) -> Response:
+    """Her check-ins as phone-calendar reminders: on the day, her phone reminds her and the link opens MomCheck."""
+    b = _ask_woman(session, token)
+    base = get_settings().public_base_url or str(request.base_url).rstrip("/")  # Render sets the public https URL
+    link = f"{base}/m/{token}"
+    stamp = utcnow().strftime("%Y%m%dT%H%M%SZ")
+    lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//MomCheck//Check-ins//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH"]
+    for i, c in enumerate(protocol.checkin_schedule(b.category, b.edd, b.delivery_date, today(), count=12)):
+        d = date.fromisoformat(c["date"]).strftime("%Y%m%d")
+        lines += [
+            "BEGIN:VEVENT",
+            f"UID:momcheck-{token}-{i}@momcheck",
+            f"DTSTAMP:{stamp}",
+            f"DTSTART;TZID=Asia/Kolkata:{d}T100000",
+            f"DTEND;TZID=Asia/Kolkata:{d}T101500",
+            f"SUMMARY:MomCheck check-in ({c['label']})",
+            f"DESCRIPTION:Tap to talk to MomCheck: {link}",
+            f"URL:{link}",
+            "BEGIN:VALARM",
+            "TRIGGER:PT0M",
+            "ACTION:DISPLAY",
+            "DESCRIPTION:MomCheck check-in",
+            "END:VALARM",
+            "END:VEVENT",
+        ]
+    lines.append("END:VCALENDAR")
+    return Response(
+        content="\r\n".join(lines) + "\r\n",
+        media_type="text/calendar; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="momcheck-checkins.ics"'},
+    )
+
+
+# ---- mothers join on their own ------------------------------------------------
+class JoinIn(BaseModel):
+    name: str
+    language: str
+    category: str
+    weeks: Optional[int] = None  # pregnant: weeks now
+    days_since_birth: Optional[int] = None  # new mother
+    village: str = ""
+
+
+SELF_KEEP_DAYS = 3  # self-registered demo mothers are removed after this
+
+
+@app.post("/api/join")
+def join(request: Request, body: JoinIn, session: Session = Depends(get_session)) -> dict[str, str]:
+    """A mother registers herself (no phone number) and gets her own MomCheck link and check-in schedule.
+
+    In the public demo she joins a demo ASHA's list: Hindi speakers Meena's (Barabanki), others Savita's (Pune).
+    """
+    usage.limit(request, "join", 3)
+    name = re.sub(r"[^\w\s.'-]", "", body.name, flags=re.UNICODE).strip()[:30]
+    if len(name) < 2:
+        raise HTTPException(422, "Please enter your first name.")
+    if body.language not in LANGUAGES:
+        raise HTTPException(422, "Please choose your language.")
+    if body.category not in ("pregnant", "postnatal"):
+        raise HTTPException(422, "Please choose pregnant or new mother.")
+    t = today()
+    b = Beneficiary(name=name, phone="", language=body.language, village=body.village.strip()[:60] or "Joined online", category=body.category, source="self")
+    if body.category == "pregnant":
+        if body.weeks is None or not 4 <= body.weeks <= 42:
+            raise HTTPException(422, "Please enter how many weeks pregnant you are (4 to 42).")
+        b.edd = t + timedelta(weeks=40 - body.weeks)
+    else:
+        if body.days_since_birth is None or not 0 <= body.days_since_birth <= 42:
+            raise HTTPException(422, "Please enter how many days ago your baby was born (0 to 42).")
+        b.delivery_date = t - timedelta(days=body.days_since_birth)
+    phone = "9000000100" if body.language == "hi-IN" else "9000000200"
+    asha = session.exec(select(Asha).where(Asha.phone == phone, Asha.is_demo == True)).first()  # noqa: E712
+    b.asha_id = asha.id if asha else None
+    b.ask_token = secrets.token_urlsafe(9)
+    # Keep the demo tidy: drop self-registered mothers after a few days
+    old = session.exec(
+        select(Beneficiary).where(Beneficiary.source == "self", Beneficiary.created_at < utcnow() - timedelta(days=SELF_KEEP_DAYS))
+    ).all()
+    if old:
+        delete_women(session, old)
+    session.add(b)
+    session.commit()
+    return {"token": b.ask_token, "path": f"/m/{b.ask_token}"}
+
+
 # ---- interpreter: the ASHA and the woman each speak their own language -----------
 @app.post("/api/beneficiaries/{bid}/interpreter")
-def start_interpreter(bid: int, asha: Asha = Depends(current_asha), session: Session = Depends(get_session)) -> dict[str, Any]:
+def start_interpreter(request: Request, bid: int, asha: Asha = Depends(current_asha), session: Session = Depends(get_session)) -> dict[str, Any]:
+    _demo_limit(request, asha, "conversation", 25)
     b = _get_beneficiary(session, bid, asha)
     return call_out(calls.start_interpreter(session, b), b)
 
@@ -908,6 +1017,19 @@ async def interpret(
         return await calls.interpret_turn(session, call, data, audio.filename or "turn.wav", speaker)
     except calls.CallError as exc:
         raise HTTPException(exc.status, str(exc)) from exc
+
+
+# ---- usage (the owner's view of the credits being spent) ----------------------------
+@app.get("/api/usage")
+def get_usage(asha: Asha = Depends(current_asha)) -> dict[str, Any]:
+    if asha.is_demo:
+        raise HTTPException(403, "Usage is shown in your own account only.")
+    return usage.report()
+
+
+@app.exception_handler(usage.BudgetExceeded)
+async def _budget_exceeded(_, exc: usage.BudgetExceeded):
+    return JSONResponse(status_code=429, content={"detail": str(exc)})
 
 
 # ---- demo -------------------------------------------------------------------
