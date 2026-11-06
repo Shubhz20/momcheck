@@ -1,0 +1,23 @@
+# Render blueprint: one free web service (Docker). Secrets are entered in the Render dashboard.
+services:
+  - type: web
+    name: janani-saathi
+    runtime: docker
+    plan: free
+    region: singapore
+    healthCheckPath: /api/health
+    envVars:
+      - key: GNANI_SPEECH_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GNANI_STT_MODEL
+        value: prisma-v3.0
+      - key: GNANI_TTS_MODEL
+        value: timbre-v3.0
+      - key: GNANI_TTS_VOICE
+        value: Chetana
