@@ -165,7 +165,7 @@ def _names(session: Session, asha: Asha) -> dict[int, Beneficiary]:
 
 def _phone_calls_ready() -> bool:
     s = get_settings()
-    return s.phone_calls_configured and s.public_base_url.startswith("https://")
+    return s.phone_calls_enabled and s.phone_calls_configured and s.public_base_url.startswith("https://")
 
 
 def _me(asha: Asha) -> dict[str, Any]:

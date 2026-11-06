@@ -149,6 +149,11 @@ def _friendly_twilio_error(body: dict[str, Any], phone: str) -> str:
             f"+91 {phone} isn't verified on the Twilio trial account, so it can't be called. Verify it in Twilio "
             "(Phone Numbers > Verified Caller IDs), or use the call in your browser."
         )
+    if "trial account" in message.lower() and "parameter" in message.lower():
+        return (
+            "Twilio's free trial doesn't allow live call audio, which MomCheck needs to talk on the phone. "
+            "Upgrade the Twilio account to use real phone calls, or use the call in your browser."
+        )
     if code in (21215, 13227) or "permission" in message.lower():
         return "Calls to India aren't switched on in Twilio. Turn on India under Voice > Settings > Geo permissions."
     return f"Twilio couldn't place the call: {message}"
@@ -178,6 +183,8 @@ _greetings: dict[int, bytes] = {}  # call id -> greeting audio, made while the p
 async def place_call(session: Session, b: Beneficiary) -> Call:
     """Create the call record and ask Twilio to ring her. Raises PhoneCallError with a readable message."""
     s = get_settings()
+    if not s.phone_calls_enabled:
+        raise PhoneCallError("Real phone calls are switched off on this server. Use the call in your browser.", 503)
     if not s.phone_calls_configured:
         raise PhoneCallError("Phone calls aren't set up on this server (Twilio keys are missing).", 503)
     if not s.public_base_url.startswith("https://"):

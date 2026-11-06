@@ -22,8 +22,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .catch(() => setMe(null))
       .finally(() => setChecking(false));
     const onSignedOut = () => setMe(null);
+    // Pick up account changes (e.g. phone calls switched on) when she comes back to the tab.
+    const onFocus = () => {
+      api
+        .me()
+        .then((fresh) => setMe((cur) => (cur && JSON.stringify(cur) !== JSON.stringify(fresh) ? fresh : cur)))
+        .catch(() => {});
+    };
     window.addEventListener(SIGNED_OUT_EVENT, onSignedOut);
-    return () => window.removeEventListener(SIGNED_OUT_EVENT, onSignedOut);
+    window.addEventListener("focus", onFocus);
+    return () => {
+      window.removeEventListener(SIGNED_OUT_EVENT, onSignedOut);
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
   const signOut = useCallback(async () => {

@@ -150,7 +150,7 @@ export function BeneficiaryDetailPage() {
 
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <InfoItem icon={<Phone className="size-4" />} label="Mobile">
-              <a href={`tel:+91${data.phone}`} className="hover:underline">
+              <a href={`tel:+91${data.phone}`} className="hover:underline" title="Call her yourself from your own phone">
                 +91 {data.phone}
               </a>
             </InfoItem>

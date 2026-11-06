@@ -43,7 +43,9 @@ class Settings:
             f"momcheck-session:{self.database_url}:{self.speech_api_key}".encode()
         ).hexdigest()
 
-        # Twilio (real phone calls). The trial account can only call numbers verified on it.
+        # Twilio (real phone calls). Off unless PHONE_CALLS=on: Twilio's free trial blocks live call audio
+        # (<Stream>), so calls only work on an upgraded Twilio account.
+        self.phone_calls_enabled = _env("PHONE_CALLS", "off").lower() in ("on", "true", "1", "yes")
         self.twilio_account_sid = _env("TWILIO_ACCOUNT_SID")
         self.twilio_auth_token = _env("TWILIO_AUTH_TOKEN")
         self.twilio_from_number = _env("TWILIO_FROM_NUMBER")

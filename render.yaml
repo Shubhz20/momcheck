@@ -13,7 +13,10 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      # Real phone calls (optional). The app's public URL comes from RENDER_EXTERNAL_URL, which Render sets.
+      # Real phone calls (optional). Needs an upgraded Twilio account (the free trial blocks live call audio).
+      # The app's public URL comes from RENDER_EXTERNAL_URL, which Render sets.
+      - key: PHONE_CALLS
+        value: "off"
       - key: TWILIO_ACCOUNT_SID
         sync: false
       - key: TWILIO_AUTH_TOKEN

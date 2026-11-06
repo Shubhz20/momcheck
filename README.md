@@ -20,7 +20,7 @@ When the call ends, the ASHA sees an English summary, the outcome and the full t
 **Who uses what.** The dashboard is for the ASHA worker. Each ASHA has her own account and sees only the women she looks after. Mothers never see the dashboard: MomCheck **rings their phone** (any phone, including a basic feature phone) and talks with them.
 
 **Two ways to place a call**
-- **Call her phone**: a real phone call through Twilio. Twilio streams the call audio (8 kHz) to our server over a WebSocket, and MomCheck's replies are streamed back into the call. The ASHA watches the conversation live on her dashboard and can hang up. (Twilio's free trial can only ring numbers verified on the account, so this is enabled for private accounts.)
+- **Call her phone**: a real phone call through Twilio. Twilio streams the call audio (8 kHz) to our server over a WebSocket, and MomCheck's replies are streamed back into the call. The ASHA watches the conversation live on her dashboard and can hang up. This needs an **upgraded** Twilio account, because Twilio's free trial blocks live call audio (`<Stream>`), so it is switched off in the hosted demo (`PHONE_CALLS=on` turns it on). It was tested end to end with a simulated Twilio media stream.
 - **Browser call**: the same conversation in the browser, where you speak as the mother. Anyone can try this in the demo accounts, at no cost. A phone-line mode squeezes the microphone audio to 8 kHz with background noise to imitate a real call.
 
 **Try it:** open the app and pick a demo ASHA: **Meena Kumari**, a rural ASHA in Barabanki (UP) whose women speak Hindi, or **Savita Jadhav**, an urban ASHA in Pune whose ward has migrant families speaking nine different languages.

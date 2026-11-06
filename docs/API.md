@@ -119,7 +119,7 @@ interface Dashboard {
 
 | Method | Path | Body / query | Returns |
 |---|---|---|---|
-| GET | `/api/health` | | `{ ok: true; commit: string; phone_calls: boolean }`: `commit` is the deployed git commit (`local` in development); `phone_calls` is true when Twilio is configured |
+| GET | `/api/health` | | `{ ok: true; commit: string; phone_calls: boolean }`: `commit` is the deployed git commit (`local` in development); `phone_calls` is true when phone calls are switched on and Twilio is configured |
 | GET | `/api/auth/demo-accounts` | | `DemoAccount[]` |
 | POST | `/api/auth/demo` | `{ asha_id }` | `Me` (signs in to a demo account) |
 | POST | `/api/auth/login` | `{ phone, pin }` | `Me`. `401` wrong phone/PIN, `429` after 5 wrong PINs (10 min) |
@@ -135,7 +135,7 @@ interface Dashboard {
 | PATCH | `/api/beneficiaries/{id}` | any POST field | `Beneficiary` |
 | DELETE | `/api/beneficiaries/{id}` | | `{ ok: true }` |
 | POST | `/api/beneficiaries/{id}/call` | | `{ call: Call; reply: TurnReply }`: starts a voice call, `reply` is MomCheck's spoken greeting |
-| POST | `/api/beneficiaries/{id}/phone-call` | | `Call` (status `ringing`, channel `phone`): rings her real phone through Twilio. `403` for demo accounts, `503` if Twilio isn't configured, `502` with a readable reason if Twilio refuses (e.g. number not verified on a trial account) |
+| POST | `/api/beneficiaries/{id}/phone-call` | | `Call` (status `ringing`, channel `phone`): rings her real phone through Twilio. `403` for demo accounts, `503` if phone calls are off (`PHONE_CALLS`) or Twilio isn't configured, `502` with a readable reason if Twilio refuses (e.g. number not verified on a trial account) |
 | POST | `/api/calls/{id}/hangup` | | `Call`: ends a ringing or live phone call |
 | GET | `/api/calls/{id}` | | `Call` (poll it to follow a live phone call; the transcript grows turn by turn) |
 | POST | `/api/calls/{id}/turn` | multipart: `audio` (WAV mono, 8 or 16 kHz, ≤ 30 s), `phone_line` (`"true"`/`"false"`) | `TurnReply` |
