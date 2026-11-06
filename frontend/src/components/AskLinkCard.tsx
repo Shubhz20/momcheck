@@ -13,7 +13,9 @@ export function AskLinkCard({ beneficiaryId, name, initialToken }: { beneficiary
   const [token, setToken] = useState(initialToken);
   const [qr, setQr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const url = token ? `${window.location.origin}/m/${token}` : null;
+  // The public address mothers use (a deployment behind another host can set window.__PUBLIC_ORIGIN)
+  const origin = (window as unknown as { __PUBLIC_ORIGIN?: string }).__PUBLIC_ORIGIN || window.location.origin;
+  const url = token ? `${origin}/m/${token}` : null;
   const first = name.split(" ")[0];
 
   useEffect(() => {
