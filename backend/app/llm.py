@@ -1,7 +1,7 @@
-"""Backend LLM (Google Gemini): call analysis, note extraction, briefing text.
+"""Backend LLM (Google Gemini): the call agent's replies, call review, note extraction, briefing text.
 
-The phone conversation itself runs on Gnani Agent Builder's own LLM. This module only
-post-processes text that Gnani STT / Agent Builder already produced.
+Gnani Prisma STT turns speech into text and Timbre TTS speaks the reply; this module decides what
+to say. Models are tried in order (GEMINI_MODEL, then GEMINI_FALLBACK_MODELS) when one is busy.
 """
 from __future__ import annotations
 
@@ -34,6 +34,26 @@ def _get_client():
     return _client
 
 
+_RETRYABLE = ("503", "429", "404", "UNAVAILABLE", "RESOURCE_EXHAUSTED", "NOT_FOUND", "overloaded")
+
+
+async def _generate(contents, config):
+    """generate_content on GEMINI_MODEL, moving to the fallback models on busy/quota/missing-model errors."""
+    s = get_settings()
+    client = _get_client()
+    models = [s.gemini_model] + [m for m in s.gemini_fallback_models if m != s.gemini_model]
+    last: Exception | None = None
+    for model in models:
+        try:
+            return await client.aio.models.generate_content(model=model, contents=contents, config=config)
+        except Exception as exc:
+            if not any(code in str(exc) for code in _RETRYABLE):
+                raise
+            log.warning("Gemini %s unavailable, trying next model: %s", model, str(exc)[:120])
+            last = exc
+    raise last  # type: ignore[misc]
+
+
 def _parse_json(text: str) -> dict[str, Any]:
     text = text.strip()
     fenced = re.search(r"```(?:json)?\s*(.*?)```", text, re.S)
@@ -49,14 +69,11 @@ async def chat_json(system: str, history: list[tuple[str, str]], *, temperature:
     """Multi-turn chat. history = [(role, text)] with role "user" or "model". Returns parsed JSON."""
     from google.genai import types
 
-    s = get_settings()
-    client = _get_client()
     contents = [types.Content(role=role, parts=[types.Part(text=text)]) for role, text in history]
     try:
-        resp = await client.aio.models.generate_content(
-            model=s.gemini_model,
-            contents=contents,
-            config=types.GenerateContentConfig(
+        resp = await _generate(
+            contents,
+            types.GenerateContentConfig(
                 system_instruction=system, temperature=temperature, response_mime_type="application/json"
             ),
         )
@@ -71,15 +88,12 @@ async def chat_json(system: str, history: list[tuple[str, str]], *, temperature:
 async def complete_json(prompt: str, *, temperature: float = 0.2) -> dict[str, Any]:
     from google.genai import types
 
-    s = get_settings()
-    client = _get_client()
     last_error: Exception | None = None
     for attempt in range(2):
         try:
-            resp = await client.aio.models.generate_content(
-                model=s.gemini_model,
-                contents=prompt if attempt == 0 else f"{prompt}\n\nYour previous answer was not valid JSON ({last_error}). Return only valid JSON.",
-                config=types.GenerateContentConfig(temperature=temperature, response_mime_type="application/json"),
+            resp = await _generate(
+                prompt if attempt == 0 else f"{prompt}\n\nYour previous answer was not valid JSON ({last_error}). Return only valid JSON.",
+                types.GenerateContentConfig(temperature=temperature, response_mime_type="application/json"),
             )
             return _parse_json(resp.text or "")
         except (ValueError, LLMError) as exc:  # JSON problems -> retry once

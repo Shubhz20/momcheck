@@ -26,7 +26,13 @@ class Settings:
 
         self.llm_provider = _env("LLM_PROVIDER", "gemini")
         self.gemini_api_key = _env("GEMINI_API_KEY")
-        self.gemini_model = _env("GEMINI_MODEL", "gemini-2.5-flash")
+        # gemini-2.5-flash is closed to new API keys; flash-lite answers in ~1.5 s, which suits a live call.
+        self.gemini_model = _env("GEMINI_MODEL", "gemini-3.5-flash-lite")
+        self.gemini_fallback_models = [
+            m.strip()
+            for m in _env("GEMINI_FALLBACK_MODELS", "gemini-3-flash-preview,gemini-3.1-flash-lite").split(",")
+            if m.strip()
+        ]
 
         self.database_url = self._normalise_db_url(_env("DATABASE_URL", f"sqlite:///{ROOT_DIR / 'janani.db'}"))
         self.asha_name = _env("ASHA_NAME", "Asha didi")
